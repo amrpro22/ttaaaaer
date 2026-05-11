@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>صندوق مساعدة الحالات الطارئة</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['SF Pro Text', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#001f54',
+                        secondary: '#003b8e',
+                        gold: '#c89b3c',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f9fafb;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+            overscroll-behavior-y: contain;
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .sticky-alert { position: sticky; top: 0; z-index: 100; }
+        h1 { font-size: 1.5rem !important; }
+        .stat-value { font-size: 1.25rem !important; }
+        .stat-label { font-size: 0.65rem !important; letter-spacing: 0.05em; }
+        #searchInput { font-size: 16px !important; touch-action: manipulation; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        
+        .modal-overlay { background-color: rgba(0, 31, 84, 0.4); backdrop-filter: blur(4px); }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center">
+
+    <!-- Emergency Alert Bar -->
+    <div class="sticky-alert w-full bg-red-600/95 text-white py-1.5 px-4 shadow-sm text-center">
+        <p class="text-[10px] md:text-xs font-light tracking-wide flex items-center justify-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            الرجاء الدفع قبل تاريخ 2026/6/1 تجنباً للإحراج
+        </p>
+    </div>
+
+    <div class="w-full max-w-2xl bg-white rounded-[1.5rem] shadow-sm border border-slate-200 overflow-hidden flex flex-col my-4 md:my-8 mx-4">
+        
+        <!-- App Header -->
+        <header class="bg-primary text-white py-6 px-6 text-center relative">
+            <button onclick="requestAdminAccess()" class="absolute top-4 right-4 p-1.5 text-white/70 hover:text-white transition-colors z-20 bg-white/10 rounded-lg backdrop-blur-sm" title="لوحة التحكم">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            <div class="relative z-10">
+                <h1 class="font-bold tracking-tight mb-0.5 text-white">صندوق مساعدة الحالات الطارئة</h1>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-[0.2em]">عطاؤكم يحيي الأمل</p>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-[2px] bg-gold opacity-60"></div>
+        </header>
+
+        <!-- Dynamic Statistics -->
+        <div class="grid grid-cols-3 gap-2 px-6 -mt-4 relative z-20">
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center">
+                <span class="stat-label text-slate-400 font-bold uppercase mb-0.5">المتعهدين</span>
+                <span id="totalDonors" class="stat-value font-bold text-primary">0</span>
+            </div>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center border-b-emerald-400 border-b-2">
+                <span class="stat-label text-emerald-500 font-bold uppercase mb-0.5">تم السداد</span>
+                <span id="paidDonors" class="stat-value font-bold text-emerald-600">0</span>
+            </div>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center border-b-amber-400 border-b-2">
+                <span class="stat-label text-amber-500 font-bold uppercase mb-0.5">الانتظار</span>
+                <span id="unpaidDonors" class="stat-value font-bold text-amber-600">0</span>
+            </div>
+        </div>
+
+        <main class="p-6">
+            <div class="mb-6">
+                <div class="flex gap-2">
+                    <div class="relative flex-grow">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            inputmode="text"
+                            class="w-full pr-10 pl-4 py-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:border-primary focus:ring-0 transition-all outline-none placeholder:text-slate-400"
+                            placeholder="ابحث عن اسم المتبرع..."
+                            onkeypress="handleKeyPress(event)"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <button 
+                        onclick="searchDonor()" 
+                        class="bg-primary text-white text-[11px] font-bold py-2.5 px-5 rounded-lg hover:bg-slate-800 transition-colors">
+                        بـحث
+                    </button>
+                </div>
+                <p class="mt-2 text-[9px] text-slate-400 mr-1 italic text-center">أدخل الاسم كاملاً للحصول على النتيجة.</p>
+            </div>
+
+            <div id="resultsContainer" class="min-h-[140px] flex items-center justify-center border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                <p class="text-[10px] font-medium text-slate-400">ستظهر النتائج هنا..</p>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t border-slate-100 p-4">
+            <div class="flex flex-col gap-3 md:flex-row items-center justify-between">
+                <p class="text-[9px] text-primary/60 font-serif italic">"تجدوه عند الله"</p>
+                <div class="flex flex-wrap gap-3 items-center justify-center md:justify-end">
+                    <div class="text-center md:text-right">
+                        <p class="text-[8px] text-slate-400 font-bold uppercase">مدقق مالي</p>
+                        <p class="text-[10px] font-bold text-primary">ياسر الشجاع</p>
+                    </div>
+                    <div class="hidden md:block w-px h-4 bg-slate-200"></div>
+                    <div class="text-center md:text-right">
+                        <p class="text-[8px] text-slate-400 font-bold uppercase">تطوير</p>
+                        <p class="text-[10px] font-bold text-primary">عمرو الشجاع</p>
+                    </div>
+                    <div class="hidden md:block w-px h-4 bg-slate-200"></div>
+                    <div class="text-center md:text-right">
+                        <p class="text-[8px] text-slate-400 font-bold uppercase">إشراف</p>
+                        <p class="text-[10px] font-bold text-primary">مصطفى الشجاع</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="hidden fixed inset-0 modal-overlay z-[60] flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-6 shadow-2xl border border-slate-200 fade-in">
+            <h3 class="text-center font-bold text-primary mb-4">دخول المسؤول</h3>
+            <input type="password" id="adminPassword" placeholder="كلمة المرور" class="w-full text-center p-2.5 border border-slate-200 rounded-lg mb-4 outline-none focus:border-primary">
+            <div class="flex gap-2">
+                <button onclick="closePasswordModal()" class="flex-1 bg-slate-100 text-slate-600 text-xs py-2.5 rounded-lg font-bold">إلغاء</button>
+                <button onclick="checkPassword()" class="flex-1 bg-primary text-white text-xs py-2.5 rounded-lg font-bold">دخول</button>
+            </div>
+            <p id="passwordError" class="text-[10px] text-red-500 text-center mt-2 hidden">كلمة المرور غير صحيحة</p>
+        </div>
+    </div>
+
+    <!-- Administrative Modal -->
+    <div id="adminModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="font-bold text-primary flex items-center gap-2">لوحة التحكم</h2>
+                <div class="flex items-center gap-3">
+                    <span id="loadingIndicator" class="text-[10px] font-bold text-amber-500 animate-pulse hidden">جاري المزامنة...</span>
+                    <button onclick="toggleAdmin()" class="text-slate-400 hover:text-red-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-4 border-b border-slate-100 bg-white" id="donorFormContainer">
+                <h3 class="text-xs font-bold text-slate-500 mb-2" id="formTitle">إضافة متبرع جديد</h3>
+                <input type="hidden" id="editingId" value="">
+                <div class="flex flex-col gap-2 mb-2">
+                    <input type="text" id="newName" placeholder="الاسم كاملاً" class="w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-none focus:border-primary">
+                    <input type="text" id="newNote" placeholder="الملاحظة أو المبلغ" class="w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <div class="flex gap-2 items-center">
+                        <input type="checkbox" id="newIsPaid" class="w-4 h-4 rounded border-slate-300 text-primary">
+                        <label for="newIsPaid" class="text-xs font-medium text-slate-600">مدفوع ✅</label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-slate-100 text-slate-500 text-xs py-2 px-4 rounded-lg font-bold">إلغاء</button>
+                        <button id="submitDonorBtn" onclick="saveDonor()" class="bg-primary text-white text-xs py-2 px-6 rounded-lg font-bold">حفظ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 bg-slate-50/50" id="adminDonorsList">
+                <!-- Records list -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
+            authDomain: "amr4admin.firebaseapp.com",
+            projectId: "amr4admin",
+            storageBucket: "amr4admin.firebasestorage.app",
+            messagingSenderId: "177280788092",
+            appId: "1:177280788092:web:44f16c8f585a5b3e484bf9",
+            measurementId: "G-CWJYKCWDVH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        const appId = "amr4admin";
+        const donorsCol = collection(db, 'artifacts', appId, 'public', 'data', 'donors');
+
+        let donors = [];
+        let userAuthenticated = false;
+
+        const initAuth = async () => {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Failure:", error);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userAuthenticated = true;
+                listenToData();
+            }
+        });
+
+        function listenToData() {
+            onSnapshot(donorsCol, (snapshot) => {
+                donors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                donors.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                refreshUI();
+            }, (err) => {
+                console.error("Data Fetch Error:", err);
+            });
+        }
+
+        window.updateStats = function() {
+            const total = donors.length;
+            const paid = donors.filter(d => d.note && d.note.includes('✅')).length;
+            document.getElementById('totalDonors').innerText = total;
+            document.getElementById('paidDonors').innerText = paid;
+            document.getElementById('unpaidDonors').innerText = total - paid;
+        };
+
+        window.normalizeText = (t) => t ? t.replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[ىي]/g, 'ي').replace(/\s+/g, ' ').trim() : "";
+
+        window.searchDonor = function() {
+            const term = window.normalizeText(document.getElementById("searchInput").value);
+            const container = document.getElementById("resultsContainer");
+            if (!term) return;
+            
+            const match = donors.find(d => window.normalizeText(d.name).includes(term));
+            if (match) {
+                const isPaid = match.note && match.note.includes('✅');
+                container.innerHTML = `
+                    <div class="fade-in w-full p-4 text-center">
+                        <h4 class="text-sm font-bold text-primary mb-2">${match.name}</h4>
+                        <div class="bg-white p-3 rounded-lg border border-slate-100 shadow-sm inline-block">
+                            <p class="text-[10px] text-slate-600">${match.note || 'لا توجد ملاحظات'}</p>
+                        </div>
+                        <div class="mt-4 text-[9px] font-bold ${isPaid ? 'text-emerald-600' : 'text-red-600'}">
+                            ${isPaid ? 'نشكر عطاءكم المستمر ✓' : 'الرجاء الدفع قبل تاريخ 2026/6/1 تجنباً للإحراج'}
+                        </div>
+                    </div>`;
+            } else {
+                container.innerHTML = `<p class="text-[10px] text-slate-400">الاسم غير مسجل في الكشوفات.</p>`;
+            }
+        };
+
+        window.saveDonor = async function() {
+            if (!userAuthenticated) return;
+            const nInput = document.getElementById('newName');
+            const noteInput = document.getElementById('newNote');
+            const isPaid = document.getElementById('newIsPaid').checked;
+            const editingId = document.getElementById('editingId').value;
+            
+            if (!nInput.value.trim()) return;
+            
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            
+            // Clean up old "✅" to avoid duplicates if user toggles manually
+            let baseNote = noteInput.value.replace(/✅\s*مدفوع\./g, "").trim();
+            const finalNote = baseNote + (isPaid ? " ✅ مدفوع." : "");
+
+            try {
+                if (editingId) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'donors', editingId);
+                    await updateDoc(docRef, {
+                        name: nInput.value.trim(),
+                        note: finalNote
+                    });
+                } else {
+                    await addDoc(donorsCol, {
+                        name: nInput.value.trim(),
+                        note: finalNote,
+                        createdAt: Date.now()
+                    });
+                }
+                resetForm();
+            } catch(e) { console.error(e); }
+            document.getElementById('loadingIndicator').classList.add('hidden');
+        };
+
+        window.editDonor = (id) => {
+            const donor = donors.find(d => d.id === id);
+            if (!donor) return;
+
+            document.getElementById('formTitle').innerText = "تعديل بيانات المتبرع";
+            document.getElementById('editingId').value = donor.id;
+            document.getElementById('newName').value = donor.name;
+            
+            // Remove the checkmark text from input for easier editing
+            document.getElementById('newNote').value = donor.note ? donor.note.replace(/✅\s*مدفوع\./g, "").trim() : "";
+            document.getElementById('newIsPaid').checked = donor.note && donor.note.includes('✅');
+            
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            document.getElementById('submitDonorBtn').innerText = "تحديث";
+            
+            // Scroll form into view
+            document.getElementById('donorFormContainer').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.resetForm = () => {
+            document.getElementById('formTitle').innerText = "إضافة متبرع جديد";
+            document.getElementById('editingId').value = "";
+            document.getElementById('newName').value = "";
+            document.getElementById('newNote').value = "";
+            document.getElementById('newIsPaid').checked = false;
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            document.getElementById('submitDonorBtn').innerText = "حفظ";
+        };
+
+        window.deleteDonor = async (id) => {
+            if (confirm('هل أنت متأكد من الحذف؟')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'donors', id);
+                await deleteDoc(docRef);
+            }
+        };
+
+        window.requestAdminAccess = () => {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('adminPassword').focus();
+        };
+
+        window.closePasswordModal = () => {
+            document.getElementById('passwordModal').classList.add('hidden');
+        };
+
+        window.checkPassword = () => {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === '1992') {
+                closePasswordModal();
+                toggleAdmin();
+            } else {
+                document.getElementById('passwordError').classList.remove('hidden');
+            }
+        };
+
+        window.toggleAdmin = () => {
+            document.getElementById('adminModal').classList.toggle('hidden');
+            if(document.getElementById('adminModal').classList.contains('hidden')) resetForm();
+        };
+
+        function refreshUI() {
+            window.updateStats();
+            const list = document.getElementById('adminDonorsList');
+            list.innerHTML = donors.map(d => `
+                <div class="bg-white p-3 mb-2 rounded-xl border border-slate-100 flex justify-between items-center fade-in shadow-sm">
+                    <div class="max-w-[60%]">
+                        <p class="text-xs font-bold text-primary">${d.name}</p>
+                        <p class="text-[9px] text-slate-500 truncate">${d.note || 'بدون ملاحظات'}</p>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="editDonor('${d.id}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="تعديل">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button onclick="deleteDonor('${d.id}')" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" title="حذف">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.handleKeyPress = (e) => { 
+            if(e.key === 'Enter') {
+                if (!document.getElementById('passwordModal').classList.contains('hidden')) {
+                    window.checkPassword();
+                } else {
+                    window.searchDonor();
+                }
+            }
+        };
+
+        initAuth();
+    </script>
+</body>
+</html>
