@@ -6,17 +6,17 @@
     <title>صندوق الحالات الطارئة - شامل الزكاة والمصروفات</title>
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com/"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     
     <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase SDK (Version 8) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <!-- Firebase SDK (Version 9) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -94,13 +94,19 @@
             background-color: transparent;
             color: #475569;
         }
+
+        .payment-option-active {
+            background-color: #0f172a !important;
+            color: white !important;
+            border-color: #0f172a !important;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         const firebaseConfig = {
             apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
@@ -139,32 +145,41 @@
             const [editZakatId, setEditZakatId] = useState(null);
             const [isZakatModalOpen, setIsZakatModalOpen] = useState(false);
 
-            // Expenses state
+            // Expenses state - تم اصلاح هيكل البيانات
             const [expenseForm, setExpenseForm] = useState({
                 beneficiaryName: '',
                 caseType: 'علاج',
                 amount: '',
                 currency: 'yer',
-                expenseDate: Date.now(),
+                expenseDate: new Date().toISOString().split('T')[0],
                 recordedBy: 'مصطفى الشجاع',
                 notes: ''
             });
             const [editExpenseId, setEditExpenseId] = useState(null);
             const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
-            // Beneficiary state
+            // Beneficiary state - تم اصلاح هيكل البيانات
             const [beneficiaryForm, setBeneficiaryForm] = useState({
                 name: '',
                 helpType: 'علاج',
                 amount: '',
                 currency: 'yer',
-                helpDate: Date.now(),
+                helpDate: new Date().toISOString().split('T')[0],
                 status: 'مكتمل',
                 notes: '',
                 recordedBy: 'مصطفى الشجاع'
             });
             const [editBeneficiaryId, setEditBeneficiaryId] = useState(null);
             const [isBeneficiaryModalOpen, setIsBeneficiaryModalOpen] = useState(false);
+
+            // خيارات الدفع الجديدة لقسم الطوارئ
+            const [paymentOption, setPaymentOption] = useState('none');
+            const paymentOptions = [
+                { value: 'none', label: 'بدون أقساط', months: 0 },
+                { value: '3months', label: '3 أشهر', months: 3 },
+                { value: '6months', label: '6 أشهر', months: 6 },
+                { value: '1year', label: 'سنة كاملة', months: 12 }
+            ];
 
             const fetchGeoData = async () => {
                 const providers = [
@@ -337,20 +352,28 @@
 
             const filteredExpensesList = useMemo(() => {
                 let list = [...expenses].sort((a, b) => (b.expenseDate || 0) - (a.expenseDate || 0));
-                if (searchTerm) list = list.filter(e => e.beneficiaryName.includes(searchTerm));
+                if (searchTerm) list = list.filter(e => e.beneficiaryName && e.beneficiaryName.includes(searchTerm));
                 return list;
             }, [expenses, searchTerm]);
 
             const filteredBeneficiariesList = useMemo(() => {
                 let list = [...beneficiaries].sort((a, b) => (b.helpDate || 0) - (a.helpDate || 0));
-                if (searchTerm) list = list.filter(b => b.name.includes(searchTerm));
+                if (searchTerm) list = list.filter(b => b.name && b.name.includes(searchTerm));
                 return list;
             }, [beneficiaries, searchTerm]);
 
+            // اصلاح دالة حفظ بيانات الطوارئ
             const handleSave = async (e) => {
                 e.preventDefault();
+                
+                // التحقق من صحة البيانات
+                if (!form.name || !form.totalAmount) {
+                    alert('الرجاء إدخال الاسم والمبلغ الكلي');
+                    return;
+                }
+
                 const now = Date.now();
-                const note = `T:${form.totalAmount}|P:${form.paidAmount}|C:${form.currency.toUpperCase()}|D:${form.duration}`;
+                const note = `T:${form.totalAmount}|P:${form.paidAmount || 0}|C:${form.currency.toUpperCase()}|D:${paymentOption}`;
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 
                 const data = { 
@@ -359,23 +382,36 @@
                     ip: geoInfo.ip,
                     location: geoInfo.location,
                     note: note, 
-                    updatedAt: now
+                    updatedAt: now,
+                    paymentPlan: paymentOption,
+                    totalAmount: parseFloat(form.totalAmount),
+                    paidAmount: parseFloat(form.paidAmount) || 0
                 };
 
                 try {
                     if (editId) {
                         await ref.doc(editId).update(data);
+                        alert('تم تحديث البيانات بنجاح');
                     } else {
                         await ref.add({ ...data, createdAt: now });
+                        alert('تم إضافة المشترك بنجاح');
                     }
                     closeModal();
                 } catch (error) {
                     console.error("Firestore Save Error:", error);
+                    alert('حدث خطأ في حفظ البيانات: ' + error.message);
                 }
             };
 
+            // اصلاح دالة حفظ الزكاة
             const handleSaveZakat = async (e) => {
                 e.preventDefault();
+                
+                if (!zakatForm.name || !zakatForm.amount) {
+                    alert('الرجاء إدخال الاسم والمبلغ');
+                    return;
+                }
+
                 const now = Date.now();
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 
@@ -393,28 +429,49 @@
                 try {
                     if (editZakatId) {
                         await ref.doc(editZakatId).update(data);
+                        alert('تم تحديث الزكاة بنجاح');
                     } else {
                         await ref.add({ ...data, createdAt: now });
+                        alert('تم إضافة الزكاة بنجاح');
                     }
                     closeZakatModal();
                 } catch (error) {
                     console.error("Zakat Save Error:", error);
+                    alert('حدث خطأ في حفظ الزكاة: ' + error.message);
                 }
             };
 
+            // اصلاح دالة حفظ المصروفات - الحل الجذري
             const handleSaveExpense = async (e) => {
                 e.preventDefault();
+                
+                // التحقق من صحة البيانات
+                if (!expenseForm.beneficiaryName) {
+                    alert('الرجاء إدخال اسم المستفيد');
+                    return;
+                }
+                if (!expenseForm.amount || parseFloat(expenseForm.amount) <= 0) {
+                    alert('الرجاء إدخال مبلغ صحيح');
+                    return;
+                }
+
                 const now = Date.now();
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('expenses');
                 
+                // تحويل تاريخ الميلادي إلى timestamp
+                let expenseTimestamp = now;
+                if (expenseForm.expenseDate) {
+                    expenseTimestamp = new Date(expenseForm.expenseDate).getTime();
+                }
+                
                 const data = {
-                    beneficiaryName: expenseForm.beneficiaryName,
+                    beneficiaryName: expenseForm.beneficiaryName.trim(),
                     caseType: expenseForm.caseType,
                     amount: parseFloat(expenseForm.amount),
                     currency: expenseForm.currency,
-                    expenseDate: expenseForm.expenseDate || now,
+                    expenseDate: expenseTimestamp,
                     recordedBy: expenseForm.recordedBy,
-                    notes: expenseForm.notes,
+                    notes: expenseForm.notes || '',
                     ip: geoInfo.ip,
                     location: geoInfo.location,
                     updatedAt: now
@@ -423,28 +480,49 @@
                 try {
                     if (editExpenseId) {
                         await ref.doc(editExpenseId).update(data);
+                        alert('تم تحديث المصروف بنجاح');
                     } else {
                         await ref.add({ ...data, createdAt: now });
+                        alert('تم تسجيل المصروف بنجاح');
                     }
                     closeExpenseModal();
                 } catch (error) {
                     console.error("Expense Save Error:", error);
+                    alert('حدث خطأ في حفظ المصروف: ' + error.message);
                 }
             };
 
+            // اصلاح دالة حفظ المستفيدين - الحل الجذري
             const handleSaveBeneficiary = async (e) => {
                 e.preventDefault();
+                
+                // التحقق من صحة البيانات
+                if (!beneficiaryForm.name) {
+                    alert('الرجاء إدخال اسم المستفيد');
+                    return;
+                }
+                if (!beneficiaryForm.amount || parseFloat(beneficiaryForm.amount) <= 0) {
+                    alert('الرجاء إدخال مبلغ صحيح');
+                    return;
+                }
+
                 const now = Date.now();
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('beneficiaries');
                 
+                // تحويل تاريخ الميلادي إلى timestamp
+                let helpTimestamp = now;
+                if (beneficiaryForm.helpDate) {
+                    helpTimestamp = new Date(beneficiaryForm.helpDate).getTime();
+                }
+                
                 const data = {
-                    name: beneficiaryForm.name,
+                    name: beneficiaryForm.name.trim(),
                     helpType: beneficiaryForm.helpType,
                     amount: parseFloat(beneficiaryForm.amount),
                     currency: beneficiaryForm.currency,
-                    helpDate: beneficiaryForm.helpDate || now,
+                    helpDate: helpTimestamp,
                     status: beneficiaryForm.status,
-                    notes: beneficiaryForm.notes,
+                    notes: beneficiaryForm.notes || '',
                     recordedBy: beneficiaryForm.recordedBy,
                     ip: geoInfo.ip,
                     location: geoInfo.location,
@@ -454,12 +532,15 @@
                 try {
                     if (editBeneficiaryId) {
                         await ref.doc(editBeneficiaryId).update(data);
+                        alert('تم تحديث بيانات المستفيد بنجاح');
                     } else {
                         await ref.add({ ...data, createdAt: now });
+                        alert('تم إضافة المستفيد بنجاح');
                     }
                     closeBeneficiaryModal();
                 } catch (error) {
                     console.error("Beneficiary Save Error:", error);
+                    alert('حدث خطأ في حفظ المستفيد: ' + error.message);
                 }
             };
             
@@ -467,6 +548,7 @@
                 if (confirm("هل تريد حذف سجل الزكاة نهائياً؟")) {
                     const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                     await ref.doc(id).delete();
+                    alert('تم الحذف بنجاح');
                 }
             };
             
@@ -474,6 +556,7 @@
                 if (confirm("هل تريد حذف هذا السجل نهائياً؟")) {
                     const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                     await ref.doc(id).delete();
+                    alert('تم الحذف بنجاح');
                 }
             };
 
@@ -481,6 +564,7 @@
                 if (confirm("هل تريد حذف هذا المصروف نهائياً؟")) {
                     const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('expenses');
                     await ref.doc(id).delete();
+                    alert('تم الحذف بنجاح');
                 }
             };
 
@@ -488,6 +572,7 @@
                 if (confirm("هل تريد حذف سجل المستفيد نهائياً؟")) {
                     const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('beneficiaries');
                     await ref.doc(id).delete();
+                    alert('تم الحذف بنجاح');
                 }
             };
 
@@ -495,6 +580,7 @@
                 setIsModalOpen(false);
                 setEditId(null);
                 setForm({ name: '', recordedBy: 'مصطفى الشجاع', totalAmount: '', paidAmount: '', currency: 'sar', duration: 'none', isPaidStatus: false });
+                setPaymentOption('none');
             };
 
             const closeZakatModal = () => {
@@ -506,18 +592,40 @@
             const closeExpenseModal = () => {
                 setIsExpenseModalOpen(false);
                 setEditExpenseId(null);
-                setExpenseForm({ beneficiaryName: '', caseType: 'علاج', amount: '', currency: 'yer', expenseDate: Date.now(), recordedBy: 'مصطفى الشجاع', notes: '' });
+                setExpenseForm({ 
+                    beneficiaryName: '', 
+                    caseType: 'علاج', 
+                    amount: '', 
+                    currency: 'yer', 
+                    expenseDate: new Date().toISOString().split('T')[0], 
+                    recordedBy: 'مصطفى الشجاع', 
+                    notes: '' 
+                });
             };
 
             const closeBeneficiaryModal = () => {
                 setIsBeneficiaryModalOpen(false);
                 setEditBeneficiaryId(null);
-                setBeneficiaryForm({ name: '', helpType: 'علاج', amount: '', currency: 'yer', helpDate: Date.now(), status: 'مكتمل', notes: '', recordedBy: 'مصطفى الشجاع' });
+                setBeneficiaryForm({ 
+                    name: '', 
+                    helpType: 'علاج', 
+                    amount: '', 
+                    currency: 'yer', 
+                    helpDate: new Date().toISOString().split('T')[0], 
+                    status: 'مكتمل', 
+                    notes: '', 
+                    recordedBy: 'مصطفى الشجاع' 
+                });
             };
 
             const formatUpdateDate = (ts) => {
                 if (!ts) return "غير متوفر";
                 return new Date(ts).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            };
+
+            const getPaymentPlanLabel = (plan) => {
+                const option = paymentOptions.find(opt => opt.value === plan);
+                return option ? option.label : 'بدون أقساط';
             };
 
             const generatePDF = async () => {
@@ -543,6 +651,7 @@
                                     <div style="font-weight: bold; color: #1e293b; font-size: 14px;">${d.name}</div>
                                     <div style="font-size: 10px; color: #64748b; margin-top: 2px;">الموقع: ${d.location || '---'}</div>
                                     <div style="font-size: 9px; color: #94a3b8; margin-top: 2px;">تحديث: ${formatUpdateDate(d.updatedAt)}</div>
+                                    <div style="font-size: 9px; color: #8b5cf6; margin-top: 2px;">خطة السداد: ${getPaymentPlanLabel(d.paymentPlan)}</div>
                                 </td>
                                 <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${info.total.toLocaleString()}</td>
                                 <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">
@@ -589,7 +698,7 @@
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${exp.caseType}</td>
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${exp.amount.toLocaleString()} ${exp.currency === 'sar' ? 'ر.س' : exp.currency === 'usd' ? '$' : 'ي.ي'}</td>
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${new Date(exp.expenseDate).toLocaleDateString('ar-YE')}</td>
-                                        </tr>
+                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
@@ -601,7 +710,7 @@
                                         <th style="padding: 15px; text-align: center;">نوع المساعدة</th>
                                         <th style="padding: 15px; text-align: center;">المبلغ</th>
                                         <th style="padding: 15px; text-align: center;">الحالة</th>
-                                    </tr>
+                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${beneficiaries.map((ben, idx) => `
@@ -610,7 +719,7 @@
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.helpType}</td>
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.amount.toLocaleString()} ${ben.currency === 'sar' ? 'ر.س' : ben.currency === 'usd' ? '$' : 'ي.ي'}</td>
                                             <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.status}</td>
-                                         </tr>
+                                         </table>
                                     `).join('')}
                                 </tbody>
                             </table>
@@ -728,6 +837,9 @@
                                                 <div className="flex flex-col gap-0.5 mb-2">
                                                     <div className="text-[10px] font-bold text-emerald-600">قسم الحالات الطارئة</div>
                                                     <div className="text-[10px] font-medium text-rose-500">المتبقي: {info.remaining.toLocaleString()} {info.curr.toUpperCase()}</div>
+                                                    {d.paymentPlan && d.paymentPlan !== 'none' && (
+                                                        <div className="text-[9px] font-bold text-purple-600">خطة السداد: {getPaymentPlanLabel(d.paymentPlan)}</div>
+                                                    )}
                                                 </div>
 
                                                 <div className="update-time-badge mb-2">تحديث: {formatUpdateDate(d.updatedAt)}</div>
@@ -741,7 +853,7 @@
                                         </div>
                                         <div className="timeline-track"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
                                         <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] flex items-center justify-center gap-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
-                                            <button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: d.recordedBy || 'مصطفى الشجاع', totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100 }); setIsModalOpen(true); }} className="p-3 px-6 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">تعديل</button>
+                                            <button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: d.recordedBy || 'مصطفى الشجاع', totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100 }); setPaymentOption(d.paymentPlan || 'none'); setIsModalOpen(true); }} className="p-3 px-6 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">تعديل</button>
                                             <button onClick={() => deleteEmergencyRecord(d.id)} className="p-3 px-6 bg-rose-600 text-white rounded-2xl font-bold shadow-lg">حذف</button>
                                         </div>
                                     </div>
@@ -779,7 +891,7 @@
                                         <div className="text-left"><div className="text-xl font-black text-rose-700">{parseFloat(exp.amount).toLocaleString()} <span className="text-xs uppercase">{exp.currency === 'sar' ? 'ر.س' : exp.currency === 'usd' ? '$' : 'ي.ي'}</span></div></div>
                                     </div>
                                     <div className="flex gap-3 mt-4">
-                                        <button onClick={() => { setEditExpenseId(exp.id); setExpenseForm({ beneficiaryName: exp.beneficiaryName, caseType: exp.caseType, amount: exp.amount, currency: exp.currency, expenseDate: exp.expenseDate, recordedBy: exp.recordedBy, notes: exp.notes || '' }); setIsExpenseModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
+                                        <button onClick={() => { setEditExpenseId(exp.id); setExpenseForm({ beneficiaryName: exp.beneficiaryName, caseType: exp.caseType, amount: exp.amount, currency: exp.currency, expenseDate: new Date(exp.expenseDate).toISOString().split('T')[0], recordedBy: exp.recordedBy, notes: exp.notes || '' }); setIsExpenseModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
                                         <button onClick={() => deleteExpenseRecord(exp.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
                                     </div>
                                 </div>
@@ -791,7 +903,7 @@
                                         <div>
                                             <h3 className="font-bold text-slate-800 text-lg">{ben.name}</h3>
                                             <div className="text-[10px] font-bold text-cyan-600 mt-0.5 mb-1">نوع المساعدة: {ben.helpType}</div>
-                                            <div className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold mt-1 mb-1 ${ben.status === 'مكتمل' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">الحالة: {ben.status}</div>
+                                            <div className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold mt-1 mb-1 ${ben.status === 'مكتمل' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>الحالة: {ben.status}</div>
                                             {ben.notes && <p className="text-[9px] text-slate-500 mt-1">ملاحظات: {ben.notes}</p>}
                                             <p className="text-[9px] text-slate-400">مسجل بواسطة: {ben.recordedBy}</p>
                                             <p className="text-[9px] text-slate-400">التاريخ: {formatUpdateDate(ben.helpDate)}</p>
@@ -799,7 +911,7 @@
                                         <div className="text-left"><div className="text-xl font-black text-cyan-700">{parseFloat(ben.amount).toLocaleString()} <span className="text-xs uppercase">{ben.currency === 'sar' ? 'ر.س' : ben.currency === 'usd' ? '$' : 'ي.ي'}</span></div></div>
                                     </div>
                                     <div className="flex gap-3 mt-4">
-                                        <button onClick={() => { setEditBeneficiaryId(ben.id); setBeneficiaryForm({ name: ben.name, helpType: ben.helpType, amount: ben.amount, currency: ben.currency, helpDate: ben.helpDate, status: ben.status, notes: ben.notes || '', recordedBy: ben.recordedBy }); setIsBeneficiaryModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
+                                        <button onClick={() => { setEditBeneficiaryId(ben.id); setBeneficiaryForm({ name: ben.name, helpType: ben.helpType, amount: ben.amount, currency: ben.currency, helpDate: new Date(ben.helpDate).toISOString().split('T')[0], status: ben.status, notes: ben.notes || '', recordedBy: ben.recordedBy }); setIsBeneficiaryModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
                                         <button onClick={() => deleteBeneficiaryRecord(ben.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
                                     </div>
                                 </div>
@@ -823,19 +935,56 @@
                         </div>
                     </div>
 
-                    {/* Emergency Modal */}
+                    {/* Emergency Modal with Payment Options */}
                     {isModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeModal}>
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl">
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black">{editId ? 'تعديل' : 'إضافة مشترك'}</h2><button onClick={closeModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black">{editId ? 'تعديل' : 'إضافة مشترك'}</h2><button onClick={closeModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
                                 <form onSubmit={handleSave} className="space-y-6">
-                                    <input required placeholder="الاسم الكامل" className="w-full bg-slate-50 p-5 rounded-2xl" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
-                                    <select className="w-full bg-slate-100 p-4 rounded-2xl" value={form.recordedBy} onChange={e=>setForm({...form, recordedBy:e.target.value})}><option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option></select>
-                                    <div className="grid grid-cols-2 gap-4"><input type="number" placeholder="المبلغ الكلي" className="bg-slate-50 p-5 rounded-2xl" value={form.totalAmount} onChange={e=>setForm({...form, totalAmount:e.target.value})} /><select className="bg-slate-50 p-5 rounded-2xl" value={form.currency} onChange={e=>setForm({...form, currency:e.target.value})}><option value="sar">سعودي</option><option value="usd">دولار</option><option value="yer">يمني</option></select></div>
-                                    <div className="flex gap-2"><button type="button" onClick={() => setForm({...form, isPaidStatus: true, paidAmount: form.totalAmount})} className={`flex-1 py-4 rounded-2xl ${form.isPaidStatus ? 'bg-emerald-600 text-white' : 'bg-slate-50'}`}>تم السداد</button><button type="button" onClick={() => setForm({...form, isPaidStatus: false})} className={`flex-1 py-4 rounded-2xl ${!form.isPaidStatus ? 'bg-amber-500 text-white' : 'bg-slate-50'}`}>جزئي</button></div>
-                                    {!form.isPaidStatus && <input type="number" placeholder="المبلغ المدفوع" className="w-full border p-5 rounded-2xl" value={form.paidAmount} onChange={e=>setForm({...form, paidAmount:e.target.value})} />}
-                                    <button className="w-full bg-slate-900 text-white py-5 rounded-2xl">{editId ? 'تحديث' : 'تأكيد'}</button>
+                                    <input required placeholder="الاسم الكامل" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
+                                    <select className="w-full bg-slate-100 p-4 rounded-2xl" value={form.recordedBy} onChange={e=>setForm({...form, recordedBy:e.target.value})}>
+                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
+                                    </select>
+                                    
+                                    {/* خيارات الدفع الجديدة */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-bold text-slate-700">خطة الدفع / التقسيط</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {paymentOptions.map(option => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => setPaymentOption(option.value)}
+                                                    className={`px-4 py-3 rounded-xl text-sm font-bold transition-all border-2 ${
+                                                        paymentOption === option.value 
+                                                            ? 'payment-option-active border-slate-900 bg-slate-900 text-white' 
+                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" required placeholder="المبلغ الكلي" className="bg-slate-50 p-5 rounded-2xl" value={form.totalAmount} onChange={e=>setForm({...form, totalAmount:e.target.value})} />
+                                        <select className="bg-slate-50 p-5 rounded-2xl" value={form.currency} onChange={e=>setForm({...form, currency:e.target.value})}>
+                                            <option value="sar">ريال سعودي</option><option value="usd">دولار أمريكي</option><option value="yer">ريال يمني</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => { setForm({...form, isPaidStatus: true, paidAmount: form.totalAmount}); }} className={`flex-1 py-4 rounded-2xl transition-all ${form.isPaidStatus ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>دفع كامل</button>
+                                        <button type="button" onClick={() => { setForm({...form, isPaidStatus: false}); }} className={`flex-1 py-4 rounded-2xl transition-all ${!form.isPaidStatus ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'}`}>دفع جزئي</button>
+                                    </div>
+                                    
+                                    {!form.isPaidStatus && (
+                                        <input type="number" placeholder="المبلغ المدفوع" className="w-full border-2 border-slate-200 p-5 rounded-2xl" value={form.paidAmount} onChange={e=>setForm({...form, paidAmount:e.target.value})} />
+                                    )}
+                                    
+                                    <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg">{editId ? 'تحديث' : 'تأكيد الإضافة'}</button>
                                 </form>
                             </div>
                         </div>
@@ -843,28 +992,35 @@
                     
                     {/* Zakat Modal */}
                     {isZakatModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeZakatModal}>
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeZakatModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-purple-500">
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-purple-800">{editZakatId ? 'تعديل مال زكاة' : 'إضافة مال زكاة'}</h2><button onClick={closeZakatModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-purple-500" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-purple-800">{editZakatId ? 'تعديل مال زكاة' : 'إضافة مال زكاة'}</h2><button onClick={closeZakatModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
                                 <form onSubmit={handleSaveZakat} className="space-y-6">
-                                    <input required placeholder="اسم المتبرع / الجهة" className="w-full bg-slate-50 p-5 rounded-2xl" value={zakatForm.name} onChange={e=>setZakatForm({...zakatForm, name:e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-4"><input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.amount} onChange={e=>setZakatForm({...zakatForm, amount:e.target.value})} /><select className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.currency} onChange={e=>setZakatForm({...zakatForm, currency:e.target.value})}><option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option></select></div>
-                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={zakatForm.recordedBy} onChange={e=>setZakatForm({...zakatForm, recordedBy:e.target.value})}><option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option></select>
-                                    <button className="w-full bg-purple-700 text-white py-5 rounded-2xl font-bold">{editZakatId ? 'تحديث الزكاة' : 'إضافة الزكاة'}</button>
+                                    <input required placeholder="اسم المتبرع / الجهة" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={zakatForm.name} onChange={e=>setZakatForm({...zakatForm, name:e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.amount} onChange={e=>setZakatForm({...zakatForm, amount:e.target.value})} />
+                                        <select className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.currency} onChange={e=>setZakatForm({...zakatForm, currency:e.target.value})}>
+                                            <option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option>
+                                        </select>
+                                    </div>
+                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={zakatForm.recordedBy} onChange={e=>setZakatForm({...zakatForm, recordedBy:e.target.value})}>
+                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
+                                    </select>
+                                    <button type="submit" className="w-full bg-purple-700 text-white py-5 rounded-2xl font-bold text-lg">{editZakatId ? 'تحديث الزكاة' : 'إضافة الزكاة'}</button>
                                 </form>
                             </div>
                         </div>
                     )}
 
-                    {/* Expense Modal */}
+                    {/* Expense Modal - Fixed */}
                     {isExpenseModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeExpenseModal}>
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeExpenseModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-rose-500">
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-rose-800">{editExpenseId ? 'تعديل صرف' : 'تسجيل صرف جديد'}</h2><button onClick={closeExpenseModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-rose-500" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-rose-800">{editExpenseId ? 'تعديل صرف' : 'تسجيل صرف جديد'}</h2><button onClick={closeExpenseModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
                                 <form onSubmit={handleSaveExpense} className="space-y-6">
-                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl" value={expenseForm.beneficiaryName} onChange={e=>setExpenseForm({...expenseForm, beneficiaryName:e.target.value})} />
+                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={expenseForm.beneficiaryName} onChange={e=>setExpenseForm({...expenseForm, beneficiaryName:e.target.value})} />
                                     <select className="w-full bg-slate-50 p-5 rounded-2xl" value={expenseForm.caseType} onChange={e=>setExpenseForm({...expenseForm, caseType:e.target.value})}>
                                         <option>علاج</option><option>إيجار</option><option>غذاء</option><option>كسوة</option><option>تعليم</option><option>أخرى</option>
                                     </select>
@@ -874,25 +1030,25 @@
                                             <option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option>
                                         </select>
                                     </div>
-                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={new Date(expenseForm.expenseDate).toISOString().split('T')[0]} onChange={e=>setExpenseForm({...expenseForm, expenseDate: new Date(e.target.value).getTime()})} />
+                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={expenseForm.expenseDate} onChange={e=>setExpenseForm({...expenseForm, expenseDate: e.target.value})} />
                                     <textarea placeholder="ملاحظات إضافية" className="w-full bg-slate-50 p-5 rounded-2xl" rows="3" value={expenseForm.notes} onChange={e=>setExpenseForm({...expenseForm, notes:e.target.value})} />
                                     <select className="w-full bg-slate-100 p-5 rounded-2xl" value={expenseForm.recordedBy} onChange={e=>setExpenseForm({...expenseForm, recordedBy:e.target.value})}>
                                         <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
                                     </select>
-                                    <button className="w-full bg-rose-600 text-white py-5 rounded-2xl font-bold">{editExpenseId ? 'تحديث الصرف' : 'تسجيل الصرف'}</button>
+                                    <button type="submit" className="w-full bg-rose-600 text-white py-5 rounded-2xl font-bold text-lg">{editExpenseId ? 'تحديث الصرف' : 'تسجيل الصرف'}</button>
                                 </form>
                             </div>
                         </div>
                     )}
 
-                    {/* Beneficiary Modal */}
+                    {/* Beneficiary Modal - Fixed */}
                     {isBeneficiaryModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeBeneficiaryModal}>
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeBeneficiaryModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-cyan-500">
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-cyan-800">{editBeneficiaryId ? 'تعديل مستفيد' : 'إضافة حالة مستفيد'}</h2><button onClick={closeBeneficiaryModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-cyan-500" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-cyan-800">{editBeneficiaryId ? 'تعديل مستفيد' : 'إضافة حالة مستفيد'}</h2><button onClick={closeBeneficiaryModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
                                 <form onSubmit={handleSaveBeneficiary} className="space-y-6">
-                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.name} onChange={e=>setBeneficiaryForm({...beneficiaryForm, name:e.target.value})} />
+                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={beneficiaryForm.name} onChange={e=>setBeneficiaryForm({...beneficiaryForm, name:e.target.value})} />
                                     <select className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.helpType} onChange={e=>setBeneficiaryForm({...beneficiaryForm, helpType:e.target.value})}>
                                         <option>علاج</option><option>إيجار</option><option>غذاء</option><option>كسوة</option><option>تعليم</option><option>أخرى</option>
                                     </select>
@@ -905,12 +1061,12 @@
                                     <select className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.status} onChange={e=>setBeneficiaryForm({...beneficiaryForm, status:e.target.value})}>
                                         <option>مكتمل</option><option>قيد التنفيذ</option><option>قيد الانتظار</option>
                                     </select>
-                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={new Date(beneficiaryForm.helpDate).toISOString().split('T')[0]} onChange={e=>setBeneficiaryForm({...beneficiaryForm, helpDate: new Date(e.target.value).getTime()})} />
+                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.helpDate} onChange={e=>setBeneficiaryForm({...beneficiaryForm, helpDate: e.target.value})} />
                                     <textarea placeholder="ملاحظات إضافية" className="w-full bg-slate-50 p-5 rounded-2xl" rows="3" value={beneficiaryForm.notes} onChange={e=>setBeneficiaryForm({...beneficiaryForm, notes:e.target.value})} />
                                     <select className="w-full bg-slate-100 p-5 rounded-2xl" value={beneficiaryForm.recordedBy} onChange={e=>setBeneficiaryForm({...beneficiaryForm, recordedBy:e.target.value})}>
                                         <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
                                     </select>
-                                    <button className="w-full bg-cyan-600 text-white py-5 rounded-2xl font-bold">{editBeneficiaryId ? 'تحديث المستفيد' : 'إضافة المستفيد'}</button>
+                                    <button type="submit" className="w-full bg-cyan-600 text-white py-5 rounded-2xl font-bold text-lg">{editBeneficiaryId ? 'تحديث المستفيد' : 'إضافة المستفيد'}</button>
                                 </form>
                             </div>
                         </div>
