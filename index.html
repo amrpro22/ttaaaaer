@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>صندوق الحالات الطارئة - نظام السنوات المالية</title>
+    <title>صندوق الحالات الطارئة - شامل الزكاة</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,6 +30,9 @@
             background-color: #f1f5f9;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-x pan-y;
+            overflow-x: hidden;
         }
 
         .header-gradient {
@@ -50,6 +53,7 @@
         .currency-card-sar { border-top: 4px solid #10b981; background: #ecfdf5; }
         .currency-card-usd { border-top: 4px solid #3b82f6; background: #eff6ff; }
         .currency-card-yer { border-top: 4px solid #f59e0b; background: #fffbeb; }
+        .currency-card-zakat { border-top: 4px solid #8b5cf6; background: #f5f3ff; } /* لون مميز للزكاة */
 
         .timeline-track {
             height: 8px;
@@ -68,76 +72,26 @@
             color: white !important;
         }
 
-        #pdf-export-container {
-            position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 800px; 
-            background: white;
-            direction: rtl;
-            padding: 40px;
-        }
-        
-        .required-field::after {
-            content: " *";
-            color: #e11d48;
-            font-weight: bold;
-        }
-        
-        .info-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: #f1f5f9;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 8px;
-            color: #475569;
-        }
-        
-        .device-detail {
+        .update-time-badge {
             font-size: 9px;
-            color: #64748b;
+            color: #94a3b8;
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        
-        .old-data-badge {
-            background: #fef3c7;
-            color: #92400e;
-            font-size: 8px;
-            padding: 2px 6px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
             gap: 4px;
         }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        .settings-panel {
-            background: #ffffff;
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #e2e8f0;
+        /* تبويب نشط */
+        .tab-active {
+            background-color: #0f172a;
+            color: white;
+            border-radius: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
-        
-        .test-result {
-            font-size: 10px;
-            padding: 6px 10px;
-            border-radius: 12px;
-            margin-top: 8px;
-        }
-        
-        .test-success {
-            background: #dcfce7;
-            color: #166534;
-        }
-        
-        .test-error {
-            background: #fee2e2;
-            color: #991b1b;
+        .tab-inactive {
+            background-color: transparent;
+            color: #475569;
         }
     </style>
 </head>
@@ -145,7 +99,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+        const { useState, useEffect, useMemo } = React;
 
         const firebaseConfig = {
             apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
@@ -159,286 +113,115 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-
-        // دوال مساعدة للسنة المالية - تبدأ إجبارياً من 2026
-        const FINANCIAL_START_YEAR = 2026;
-        const FINANCIAL_START_MONTH = 5;
-
-        const getFinancialYearId = (date = new Date()) => {
-            const currentDate = new Date(date);
-            const systemStartDate = new Date(FINANCIAL_START_YEAR, FINANCIAL_START_MONTH, 1);
-            
-            if (currentDate < systemStartDate) {
-                return `${FINANCIAL_START_YEAR}-${FINANCIAL_START_YEAR + 1}`;
-            }
-            
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            
-            if (month >= FINANCIAL_START_MONTH) {
-                return `${year}-${year + 1}`;
-            } else {
-                return `${year - 1}-${year}`;
-            }
-        };
-
-        const getFinancialYearEnd = (yearId) => {
-            const [startYear] = yearId.split('-');
-            return new Date(parseInt(startYear) + 1, FINANCIAL_START_MONTH - 1, 31);
-        };
-
-        // دالة لجلب معلومات الجهاز
-        const getDeviceInfo = async () => {
-            const userAgent = navigator.userAgent;
-            const platform = navigator.platform;
-            
-            let deviceType = 'desktop';
-            if (/(mobile|android|iphone|ipad|ipod)/i.test(userAgent)) {
-                deviceType = 'mobile';
-            } else if (/(tablet|ipad)/i.test(userAgent)) {
-                deviceType = 'tablet';
-            }
-            
-            let browser = 'unknown';
-            if (userAgent.includes('Chrome')) browser = 'Chrome';
-            else if (userAgent.includes('Firefox')) browser = 'Firefox';
-            else if (userAgent.includes('Safari')) browser = 'Safari';
-            else if (userAgent.includes('Edge')) browser = 'Edge';
-            
-            let ip = 'جاري الجلب...';
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                ip = data.ip;
-            } catch (error) {
-                ip = 'غير متاح';
-            }
-            
-            let location = 'غير متاح';
-            try {
-                const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-                const geoData = await geoResponse.json();
-                if (geoData.city && geoData.country_name) {
-                    location = `${geoData.city}, ${geoData.country_name}`;
-                }
-            } catch (error) {}
-            
-            return { ip, location, deviceType, browser, platform };
-        };
-
-        const isYearClosed = async (yearId) => {
-            if (!yearId) return false;
-            try {
-                const closedRef = db.collection('financialYears').doc(yearId).collection('meta').doc('status');
-                const doc = await closedRef.get();
-                return doc.exists && doc.data().closed === true;
-            } catch { return false; }
-        };
-
-        // دالة لاختبار المسار
-        const testPath = async (path) => {
-            try {
-                let ref;
-                if (path.includes('/')) {
-                    const parts = path.split('/');
-                    let currentRef = db;
-                    for (let i = 0; i < parts.length; i++) {
-                        if (i % 2 === 0) {
-                            currentRef = currentRef.collection(parts[i]);
-                        } else {
-                            currentRef = currentRef.doc(parts[i]);
-                        }
-                    }
-                    ref = currentRef;
-                } else {
-                    ref = db.collection(path);
-                }
-                const snapshot = await ref.limit(1).get();
-                return { success: true, count: snapshot.size };
-            } catch (error) {
-                return { success: false, error: error.message };
-            }
-        };
-
-        // دالة لبناء مرجع Firebase من مسار نصي
-        const getRefFromPath = (path) => {
-            if (!path) return null;
-            const parts = path.split('/');
-            let currentRef = db;
-            for (let i = 0; i < parts.length; i++) {
-                if (i % 2 === 0) {
-                    currentRef = currentRef.collection(parts[i]);
-                } else {
-                    currentRef = currentRef.doc(parts[i]);
-                }
-            }
-            return currentRef;
-        };
+        const APP_PATH = "amr4admin";
 
         const App = () => {
             const [donors, setDonors] = useState([]);
-            const [oldDonors, setOldDonors] = useState([]);
+            const [zakatRecords, setZakatRecords] = useState([]); // حالة خاصة بمال الزكاة
             const [user, setUser] = useState(null);
-            const [filter, setFilter] = useState('all');
+            const [filter, setFilter] = useState('all'); 
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [editId, setEditId] = useState(null);
             const [isPdfLoading, setIsPdfLoading] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
-            const [currentYearId, setCurrentYearId] = useState(null);
-            const [showArchivedYears, setShowArchivedYears] = useState(false);
-            const [archivedYears, setArchivedYears] = useState([]);
-            const [selectedArchivedYear, setSelectedArchivedYear] = useState(null);
-            const [archivedDonors, setArchivedDonors] = useState([]);
-            const [yearStatus, setYearStatus] = useState({ isClosed: false, endDate: null });
-            const [deviceInfo, setDeviceInfo] = useState(null);
-            const [dataEntryPersons, setDataEntryPersons] = useState([]);
-            const [showOldData, setShowOldData] = useState(true);
+            const [geoInfo, setGeoInfo] = useState({ ip: '...', location: 'تحديد الموقع...' });
             
-            // إعدادات المسار القديم
-            const [showSettings, setShowSettings] = useState(false);
-            const [oldDataPath, setOldDataPath] = useState('artifacts/amr4admin/public/data/donors');
-            const [pathTestResult, setPathTestResult] = useState(null);
-            const [isTestingPath, setIsTestingPath] = useState(false);
+            // State للتبويب النشط: 'emergency' أو 'zakat'
+            const [activeTab, setActiveTab] = useState('emergency');
+            
+            // نموذج الزكاة
+            const [zakatForm, setZakatForm] = useState({ 
+                name: '', 
+                amount: '', 
+                currency: 'yer', 
+                recordedBy: 'مصطفى الشجاع'
+            });
+            const [editZakatId, setEditZakatId] = useState(null);
+            const [isZakatModalOpen, setIsZakatModalOpen] = useState(false);
 
+            // جلب بيانات الموقع
+            const fetchGeoData = async () => {
+                const providers = [
+                    { url: 'https://ipapi.co/json/', map: (d) => ({ ip: d.ip, location: d.country_name }) },
+                    { url: 'https://worldtimeapi.org/api/ip', map: (d) => ({ ip: d.client_ip, location: d.timezone.split('/')[0] }) },
+                    { url: 'https://ipinfo.io/json?token=7656641957242c', map: (d) => ({ ip: d.ip, location: d.country }) },
+                    { url: 'https://api.db-ip.com/v2/free/self', map: (d) => ({ ip: d.ipAddress, location: d.countryName }) }
+                ];
+
+                for (const provider of providers) {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 2500);
+                        const response = await fetch(provider.url, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (response.ok) {
+                            const data = await response.json();
+                            const mapped = provider.map(data);
+                            if (mapped.location && mapped.location !== 'undefined' && mapped.location !== 'Unknown') {
+                                setGeoInfo(mapped);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Provider failed, switching...");
+                    }
+                }
+
+                try {
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    let inferredLocation = "منطقة " + tz.split('/')[0];
+                    if (tz.includes("Riyadh") || tz.includes("Asia/Aden")) inferredLocation = "السعودية/اليمن";
+                    setGeoInfo({ ip: 'متصل', location: inferredLocation });
+                } catch(e) {
+                    setGeoInfo({ ip: 'مجهول', location: 'خارج التغطية' });
+                }
+            };
+
+            useEffect(() => {
+                fetchGeoData();
+            }, []);
+
+            // نموذج الحالات الطارئة
             const [form, setForm] = useState({ 
                 name: '', 
+                recordedBy: 'مصطفى الشجاع',
                 totalAmount: '', 
                 paidAmount: '', 
                 currency: 'sar', 
                 duration: 'none', 
-                isPaidStatus: false,
-                entryByName: ''
+                isPaidStatus: false 
             });
 
-            // حفظ المسار في localStorage
+            // المصادقة
             useEffect(() => {
-                const savedPath = localStorage.getItem('oldDataPath');
-                if (savedPath) setOldDataPath(savedPath);
+                const unsub = auth.onAuthStateChanged((u) => {
+                    if (!u) auth.signInAnonymously();
+                    setUser(u);
+                });
+                return unsub;
             }, []);
 
-            useEffect(() => {
-                localStorage.setItem('oldDataPath', oldDataPath);
-            }, [oldDataPath]);
-
-            // جلب معلومات الجهاز
-            useEffect(() => {
-                getDeviceInfo().then(setDeviceInfo);
-            }, []);
-
-            // جلب البيانات القديمة من المسار المحدد
-            useEffect(() => {
-                if (!user || !oldDataPath) return;
-                
-                const ref = getRefFromPath(oldDataPath);
-                if (!ref) return;
-                
-                return ref.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ 
-                        id: doc.id, 
-                        ...doc.data(),
-                        isOldData: true,
-                        source: 'old'
-                    }));
-                    setOldDonors(data);
-                }, err => console.error("Error loading old data:", err));
-            }, [user, oldDataPath]);
-
-            // جلب أسماء مدخلي البيانات
+            // جلب بيانات الحالات الطارئة (المشتركين)
             useEffect(() => {
                 if (!user) return;
-                const loadNames = async () => {
-                    const names = new Set();
-                    oldDonors.forEach(d => {
-                        if (d.createdBy) names.add(d.createdBy);
-                        if (d.entryByName) names.add(d.entryByName);
-                    });
-                    if (currentYearId) {
-                        const donorsRef = db.collection('financialYears').doc(currentYearId).collection('donors');
-                        const snapshot = await donorsRef.get();
-                        snapshot.docs.forEach(doc => {
-                            const data = doc.data();
-                            if (data.createdBy) names.add(data.createdBy);
-                            if (data.entryByName) names.add(data.entryByName);
-                        });
-                    }
-                    setDataEntryPersons([...names].sort());
-                };
-                loadNames();
-            }, [user, currentYearId, oldDonors]);
-
-            // تهيئة السنة المالية
-            useEffect(() => {
-                const initFinancialYear = async () => {
-                    const currentYear = getFinancialYearId();
-                    setCurrentYearId(currentYear);
-                    const closed = await isYearClosed(currentYear);
-                    const endDate = getFinancialYearEnd(currentYear);
-                    const today = new Date();
-                    
-                    setYearStatus({
-                        isClosed: closed,
-                        endDate: endDate,
-                    });
-                };
-                initFinancialYear();
-            }, []);
-
-            // تحميل المشتركين الجدد
-            useEffect(() => {
-                if (!user || !currentYearId) return;
-                const ref = db.collection('financialYears').doc(currentYearId).collection('donors');
+                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 return ref.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ 
-                        id: doc.id, 
-                        ...doc.data(),
-                        isOldData: false,
-                        source: 'new'
-                    }));
+                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setDonors(data);
-                }, err => console.error("Error:", err));
-            }, [user, currentYearId]);
-
-            // تحميل السنوات المؤرشفة
-            useEffect(() => {
-                if (!user) return;
-                const loadArchivedYears = async () => {
-                    try {
-                        const yearsRef = db.collection('financialYears');
-                        const snapshot = await yearsRef.get();
-                        const years = [];
-                        for (const doc of snapshot.docs) {
-                            const yearId = doc.id;
-                            const statusDoc = await yearsRef.doc(yearId).collection('meta').doc('status').get();
-                            if (statusDoc.exists && statusDoc.data().closed === true) {
-                                years.push({ id: yearId, ...statusDoc.data() });
-                            }
-                        }
-                        years.sort((a, b) => b.id.localeCompare(a.id));
-                        setArchivedYears(years);
-                    } catch (error) {
-                        console.error("Error:", error);
-                    }
-                };
-                loadArchivedYears();
+                }, err => console.error("Firestore Error:", err));
             }, [user]);
 
-            // اختبار المسار
-            const handleTestPath = async () => {
-                setIsTestingPath(true);
-                setPathTestResult(null);
-                const result = await testPath(oldDataPath);
-                setPathTestResult(result);
-                setIsTestingPath(false);
-            };
+            // جلب بيانات مال الزكاة من مجموعة منفصلة 'zakat_funds'
+            useEffect(() => {
+                if (!user) return;
+                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
+                return zakatRef.onSnapshot(snap => {
+                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setZakatRecords(data);
+                }, err => console.error("Zakat Firestore Error:", err));
+            }, [user]);
 
-            // دمج البيانات
-            const allDonors = useMemo(() => {
-                if (showOldData) {
-                    return [...oldDonors, ...donors];
-                }
-                return [...donors];
-            }, [oldDonors, donors, showOldData]);
-
+            // دالة تحليل بيانات الطوارئ
             const parseInfo = (d) => {
                 const note = d.note || "";
                 const total = parseFloat((note.match(/T:(\d+(\.\d+)?)/) || [0, 0])[1]);
@@ -457,18 +240,31 @@
                 return { total, paid, remaining: Math.max(0, total - paid), curr, progress, color, duration };
             };
 
+            // إجماليات الطوارئ (ريال سعودي، دولار، يمني)
             const totals = useMemo(() => {
                 const sums = { sar: 0, usd: 0, yer: 0 };
-                allDonors.forEach(d => {
+                donors.forEach(d => {
                     const info = parseInfo(d);
                     if (sums[info.curr] !== undefined) sums[info.curr] += info.paid;
                 });
                 return sums;
-            }, [allDonors]);
+            }, [donors]);
 
-            const filteredList = useMemo(() => {
-                let list = [...allDonors].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-                if (searchTerm) list = list.filter(d => d.name && d.name.includes(searchTerm));
+            // إجمالي الزكاة لكل عملة (نفس العملات)
+            const zakatTotals = useMemo(() => {
+                const sums = { sar: 0, usd: 0, yer: 0 };
+                zakatRecords.forEach(record => {
+                    let curr = record.currency || 'yer';
+                    let amount = parseFloat(record.amount) || 0;
+                    if (sums[curr] !== undefined) sums[curr] += amount;
+                });
+                return sums;
+            }, [zakatRecords]);
+
+            // فلترة قائمة الطوارئ
+            const filteredEmergencyList = useMemo(() => {
+                let list = [...donors].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                if (searchTerm) list = list.filter(d => d.name.includes(searchTerm));
                 return list.filter(d => {
                     const info = parseInfo(d);
                     if (filter === 'paid') return info.progress >= 100;
@@ -476,155 +272,203 @@
                     if (filter === 'unpaid') return info.progress === 0;
                     return true;
                 });
-            }, [allDonors, filter, searchTerm]);
+            }, [donors, filter, searchTerm]);
 
+            // فلترة قائمة الزكاة حسب البحث
+            const filteredZakatList = useMemo(() => {
+                let list = [...zakatRecords].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                if (searchTerm) list = list.filter(z => z.name.includes(searchTerm));
+                return list;
+            }, [zakatRecords, searchTerm]);
+
+            // حفظ الحالة الطارئة
             const handleSave = async (e) => {
                 e.preventDefault();
-                
-                if (!form.entryByName || form.entryByName.trim() === '') {
-                    alert("يرجى إدخال اسم مدخل البيانات");
-                    return;
-                }
-                
-                if (yearStatus.isClosed) {
-                    alert(`السنة ${currentYearId} مغلقة`);
-                    return;
-                }
-                
                 const now = Date.now();
                 const note = `T:${form.totalAmount}|P:${form.paidAmount}|C:${form.currency.toUpperCase()}|D:${form.duration}`;
-                const ref = db.collection('financialYears').doc(currentYearId).collection('donors');
+                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 
                 const data = { 
                     name: form.name, 
+                    recordedBy: form.recordedBy,
+                    ip: geoInfo.ip,
+                    location: geoInfo.location,
                     note: note, 
-                    updatedAt: now,
-                    entryByName: form.entryByName,
-                    entryDeviceInfo: deviceInfo,
-                    entryTimestamp: now
+                    updatedAt: now 
                 };
 
-                if (editId) {
-                    await ref.doc(editId).update({
-                        ...data,
-                        editedBy: form.entryByName,
-                        editedAt: now,
-                        editedDeviceInfo: deviceInfo
-                    });
-                } else {
-                    await ref.add({ 
-                        ...data, 
-                        createdAt: now,
-                        createdBy: form.entryByName,
-                        createdDeviceInfo: deviceInfo
-                    });
+                try {
+                    if (editId) {
+                        await ref.doc(editId).update(data);
+                    } else {
+                        await ref.add({ ...data, createdAt: now });
+                    }
+                    closeModal();
+                } catch (error) {
+                    console.error("Firestore Save Error:", error);
                 }
+            };
+
+            // حفظ مال الزكاة
+            const handleSaveZakat = async (e) => {
+                e.preventDefault();
+                const now = Date.now();
+                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
                 
-                closeModal();
-                alert("تم الحفظ بنجاح");
+                const data = {
+                    name: zakatForm.name,
+                    amount: parseFloat(zakatForm.amount),
+                    currency: zakatForm.currency,
+                    recordedBy: zakatForm.recordedBy,
+                    ip: geoInfo.ip,
+                    location: geoInfo.location,
+                    updatedAt: now,
+                    createdAt: editZakatId ? (zakatRecords.find(r => r.id === editZakatId)?.createdAt || now) : now
+                };
+                
+                try {
+                    if (editZakatId) {
+                        await zakatRef.doc(editZakatId).update(data);
+                    } else {
+                        await zakatRef.add(data);
+                    }
+                    closeZakatModal();
+                } catch (error) {
+                    console.error("Zakat Save Error:", error);
+                }
+            };
+            
+            const deleteZakatRecord = async (id) => {
+                if (confirm("هل تريد حذف سجل الزكاة نهائياً؟")) {
+                    const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
+                    await zakatRef.doc(id).delete();
+                }
             };
 
             const closeModal = () => {
                 setIsModalOpen(false);
                 setEditId(null);
-                setForm({ 
-                    name: '', 
-                    totalAmount: '', 
-                    paidAmount: '', 
-                    currency: 'sar', 
-                    duration: 'none', 
-                    isPaidStatus: false,
-                    entryByName: ''
-                });
+                setForm({ name: '', recordedBy: 'مصطفى الشجاع', totalAmount: '', paidAmount: '', currency: 'sar', duration: 'none', isPaidStatus: false });
             };
 
-            const loadArchivedYear = async (yearId) => {
-                setSelectedArchivedYear(yearId);
-                const metaRef = db.collection('financialYears').doc(yearId).collection('meta').doc('status');
-                const archiveRef = metaRef.collection('archive').doc('donors');
-                const archiveDoc = await archiveRef.get();
-                if (archiveDoc.exists) {
-                    setArchivedDonors(archiveDoc.data().donors || []);
-                }
-                setShowArchivedYears(true);
+            const closeZakatModal = () => {
+                setIsZakatModalOpen(false);
+                setEditZakatId(null);
+                setZakatForm({ name: '', amount: '', currency: 'yer', recordedBy: 'مصطفى الشجاع' });
             };
 
-            const generateArchivedYearPDF = async (yearId, donorsList, totalsData) => {
+            const formatUpdateDate = (ts) => {
+                if (!ts) return "غير متوفر";
+                return new Date(ts).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            };
+
+            // توليد PDF (نفس الوظيفة السابقة مع دعم البيانات حسب التبويب لكن مع الحفاظ على الوظيفة الأصلية)
+            const generatePDF = async () => {
+                if (isPdfLoading) return;
                 setIsPdfLoading(true);
                 try {
-                    const element = document.getElementById('pdf-export-container');
-                    const yearStart = new Date(parseInt(yearId.split('-')[0]), 5, 1).toLocaleDateString('ar-YE');
-                    const yearEnd = new Date(parseInt(yearId.split('-')[0]) + 1, 4, 31).toLocaleDateString('ar-YE');
+                    const pdfElement = document.createElement('div');
+                    pdfElement.style.position = 'fixed';
+                    pdfElement.style.left = '-9999px';
+                    pdfElement.style.top = '0';
+                    pdfElement.style.width = '800px';
+                    pdfElement.style.background = 'white';
+                    pdfElement.style.direction = 'rtl';
+                    pdfElement.style.padding = '40px';
+                    pdfElement.style.fontFamily = 'IBM Plex Sans Arabic, sans-serif';
                     
-                    const container = document.getElementById('pdf-export-container');
-                    container.innerHTML = `
-                        <div style="direction:rtl; padding:20px">
-                            <div style="display:flex; justifyContent:space-between; alignItems:center; borderBottom:3px solid #0f172a; paddingBottom:25px; marginBottom:35px">
-                                <div><h1 style="fontSize:32px; fontWeight:bold; margin:0">تقرير صندوق الحالات الطارئة</h1>
-                                <p style="fontSize:16px; color:#10b981">قرية محبران - محافظة إب</p></div>
-                                <div style="textAlign:left"><p style="fontSize:14px; color:#64748b">السنة المالية: ${yearId}</p>
-                                <p style="fontSize:13px; color:#64748b">من ${yearStart} إلى ${yearEnd}</p></div>
+                    let rowsHtml = '';
+                    donors.forEach((d, index) => {
+                        const info = parseInfo(d);
+                        rowsHtml += `
+                            <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; vertical-align: top;">
+                                    <div style="font-weight: bold; color: #1e293b; font-size: 14px;">${d.name}</div>
+                                    <div style="font-size: 10px; color: #64748b; margin-top: 2px;">الموقع: ${d.location || '---'}</div>
+                                    <div style="font-size: 9px; color: #94a3b8; margin-top: 2px;">تحديث: ${formatUpdateDate(d.updatedAt)}</div>
+                                </td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${info.total.toLocaleString()}</td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                                    <div style="font-weight: bold; color: #059669;">${info.paid.toLocaleString()} <span style="font-size: 10px; color: #475569;">(${info.curr.toUpperCase()})</span></div>
+                                    <div style="background: #e2e8f0; border-radius: 10px; height: 6px; width: 100%; margin-top: 6px; overflow: hidden;">
+                                        <div style="background: ${info.progress >= 100 ? '#10b981' : info.progress > 50 ? '#3b82f6' : info.progress > 0 ? '#f59e0b' : '#ef4444'}; width: ${info.progress}%; height: 100%;"></div>
+                                    </div>
+                                    <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">نسبة الإنجاز: ${Math.round(info.progress)}%</div>
+                                </td>
+                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; color: #475569; font-size: 12px;">${d.recordedBy || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    pdfElement.innerHTML = `
+                        <div style="direction: rtl; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f172a; padding-bottom: 25px; margin-bottom: 35px;">
+                                <div>
+                                    <h1 style="font-size: 32px; font-weight: bold; margin: 0; color: #0f172a;">تقرير صندوق الحالات الطارئة</h1>
+                                    <p style="font-size: 18px; color: #10b981; font-weight: 700; margin: 8px 0 0;">قرية محبران - محافظة إب</p>
+                                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">إشراف: مصطفى الشجاع | تطوير: عمرو مسعد الشجاع</p>
+                                </div>
+                                <div style="text-align: left;">
+                                    <div style="background: #f1f5f9; padding: 10px 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
+                                        <p style="font-size: 14px; margin: 0; color: #1e293b; font-weight: bold;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-YE')}</p>
+                                        <p style="font-size: 14px; margin: 5px 0 0; color: #10b981; font-weight: bold;">إجمالي المشتركين: ${donors.length}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display:grid; gridTemplateColumns:1fr 1fr 1fr; gap:20px; marginBottom:40px">
-                                <div style="background:#ecfdf5; padding:20px; borderRadius:20px; textAlign:center">
-                                    <p style="fontSize:12px; color:#047857">إجمالي السعودي</p>
-                                    <p style="fontSize:22px; font-weight:900; color:#064e3b">${(totalsData?.sar || 0).toLocaleString()}</p>
+
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px;">
+                                <div style="background: #ecfdf5; padding: 15px; border-radius: 15px; border-top: 4px solid #10b981; text-align: center;">
+                                    <div style="font-size: 11px; color: #065f46; font-weight: bold; margin-bottom: 5px;">إجمالي الريال السعودي</div>
+                                    <div style="font-size: 18px; font-weight: 900; color: #064e3b;">${totals.sar.toLocaleString()}</div>
                                 </div>
-                                <div style="background:#eff6ff; padding:20px; borderRadius:20px; textAlign:center">
-                                    <p style="fontSize:12px; color:#1d4ed8">إجمالي الدولار</p>
-                                    <p style="fontSize:22px; font-weight:900; color:#1e3a8a">${(totalsData?.usd || 0).toLocaleString()}</p>
+                                <div style="background: #eff6ff; padding: 15px; border-radius: 15px; border-top: 4px solid #3b82f6; text-align: center;">
+                                    <div style="font-size: 11px; color: #1e40af; font-weight: bold; margin-bottom: 5px;">إجمالي الدولار</div>
+                                    <div style="font-size: 18px; font-weight: 900; color: #1e3a8a;">${totals.usd.toLocaleString()}</div>
                                 </div>
-                                <div style="background:#fffbeb; padding:20px; borderRadius:20px; textAlign:center">
-                                    <p style="fontSize:12px; color:#b45309">إجمالي اليمني</p>
-                                    <p style="fontSize:22px; font-weight:900; color:#78350f">${(totalsData?.yer || 0).toLocaleString()}</p>
+                                <div style="background: #fffbeb; padding: 15px; border-radius: 15px; border-top: 4px solid #f59e0b; text-align: center;">
+                                    <div style="font-size: 11px; color: #92400e; font-weight: bold; margin-bottom: 5px;">إجمالي الريال اليمني</div>
+                                    <div style="font-size: 18px; font-weight: 900; color: #78350f;">${totals.yer.toLocaleString()}</div>
                                 </div>
                             </div>
-                            <table style="width:100%; borderCollapse:collapse; fontSize:14px">
-                                <thead><tr style="background:#0f172a; color:white">
-                                    <th style="padding:15px; textAlign:right">اسم المشترك</th>
-                                    <th style="padding:15px">مدخل البيانات</th>
-                                    <th style="padding:15px">المبلغ</th>
-                                    <th style="padding:15px">المدفوع</th>
-                                    <th style="padding:15px">المتبقي</th>
-                                 </tr></thead>
-                                <tbody>${donorsList.map((d, idx) => {
-                                    const i = parseInfo(d);
-                                    return `<tr style="background:${idx % 2 === 0 ? '#fff' : '#f8fafc'}">
-                                        <td style="padding:12px; border:1px solid #e2e8f0">${d.name || 'غير معروف'}</td>
-                                        <td style="padding:12px; border:1px solid #e2e8f0; textAlign:center">${d.createdBy || d.entryByName || 'غير معروف'}</td>
-                                        <td style="padding:12px; border:1px solid #e2e8f0; textAlign:center">${i.total} ${i.curr.toUpperCase()}</td>
-                                        <td style="padding:12px; border:1px solid #e2e8f0; textAlign:center">${i.paid}</td>
-                                        <td style="padding:12px; border:1px solid #e2e8f0; textAlign:center">${i.remaining}</td>
-                                    </tr>`;
-                                }).join('')}</tbody>
-                             </table>
+                            
+                            <table style="width: 100%; border-collapse: collapse; font-size: 13px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+                                <thead>
+                                    <tr style="background: #0f172a; color: white;">
+                                        <th style="padding: 15px; text-align: right; border: 1px solid #1e293b;">اسم المشترك / التفاصيل</th>
+                                        <th style="padding: 15px; border: 1px solid #1e293b; text-align: center;">المقرر</th>
+                                        <th style="padding: 15px; border: 1px solid #1e293b; text-align: center;">المدفوع والتقدم</th>
+                                        <th style="padding: 15px; border: 1px solid #1e293b; text-align: center;">المسؤول</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                            <div style="margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                                <p>تم استخراج هذا التقرير من النظام الإلكتروني لصندوق الحالات الطارئة بمحبران</p>
+                                <p style="margin-top: 5px;">جميع الحقوق محفوظة © ${new Date().getFullYear()}</p>
+                            </div>
                         </div>
                     `;
-                    const canvas = await html2canvas(element, { scale: 3 });
-                    const imgData = canvas.toDataURL('image/jpeg');
-                    const pdf = new jspdf.jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                    
+                    document.body.appendChild(pdfElement);
+                    const canvas = await html2canvas(pdfElement, { scale: 2, backgroundColor: "#ffffff", logging: false });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                    const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
                     const pdfWidth = pdf.internal.pageSize.getWidth();
                     const imgProps = pdf.getImageProperties(imgData);
                     const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
-                    pdf.save(`تقرير_صندوق_محبران_${yearId}.pdf`);
-                } catch (error) {
-                    alert("خطأ في إنشاء PDF");
-                } finally {
-                    setIsPdfLoading(false);
-                }
-            };
-
-            const formatDate = (ts) => {
-                if (!ts) return "غير متوفر";
-                return new Date(ts).toLocaleDateString('ar-YE', { hour: '2-digit', minute: '2-digit' });
-            };
-
-            const getDurationText = (d) => {
-                if (d === '3m') return '٣ أشهر';
-                if (d === '6m') return '٦ أشهر';
-                if (d === '1y') return 'سنة كاملة';
-                return 'غير محدد';
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pdf.internal.pageSize.getHeight();
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                        heightLeft -= pdf.internal.pageSize.getHeight();
+                    }
+                    pdf.save(`تقرير_صندوق_محبران_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.pdf`);
+                    document.body.removeChild(pdfElement);
+                } catch(e) { console.error(e); } finally { setIsPdfLoading(false); }
             };
 
             const currentRemaining = useMemo(() => {
@@ -633,200 +477,172 @@
                 return Math.max(0, total - paid);
             }, [form.totalAmount, form.paidAmount]);
 
-            if (showArchivedYears) {
-                return (
-                    <div className="app-container shadow-2xl">
-                        <header className="header-gradient text-white pt-6 pb-6 px-6 rounded-b-[2.5rem]">
-                            <button onClick={() => { setShowArchivedYears(false); setSelectedArchivedYear(null); }} className="bg-white/20 px-4 py-2 rounded-xl text-sm font-bold mb-3">← العودة</button>
-                            <h1 className="text-xl font-bold">السنة المؤرشفة: {selectedArchivedYear}</h1>
-                        </header>
-                        <main className="px-5 mt-8 pb-32">
-                            <button onClick={() => {
-                                const totalsData = archivedDonors.reduce((acc, d) => {
-                                    const info = parseInfo(d);
-                                    acc[info.curr] = (acc[info.curr] || 0) + info.paid;
-                                    return acc;
-                                }, {});
-                                generateArchivedYearPDF(selectedArchivedYear, archivedDonors, totalsData);
-                            }} className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-bold mb-6">
-                                تحميل التقرير PDF
-                            </button>
-                            {archivedDonors.map((d, idx) => {
-                                const info = parseInfo(d);
-                                return (
-                                    <div key={idx} className="bg-white p-5 rounded-2xl border mb-3">
-                                        <div className="flex justify-between">
-                                            <h3 className="font-bold">{d.name}</h3>
-                                            <div className="text-lg font-black">{info.paid} {info.curr.toUpperCase()}</div>
-                                        </div>
-                                        <div className="timeline-track mt-2"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
-                                        <div className="flex justify-between text-xs text-slate-400 mt-2"><span>المقرر: {info.total}</span><span>المتبقي: {info.remaining}</span></div>
-                                    </div>
-                                );
-                            })}
-                        </main>
-                    </div>
-                );
-            }
-
             return (
                 <div className="app-container shadow-2xl">
                     <header className="header-gradient text-white pt-6 pb-6 px-6 rounded-b-[2.5rem] shadow-xl">
                         <div className="flex justify-between items-center">
                             <div>
-                                <h1 className="text-base font-bold">صندوق الحالات الطارئة</h1>
-                                <p className="text-[11px] text-emerald-400">قرية محبران</p>
-                                <div className="text-[9px] text-white/60 mt-1">
-                                    السنة: {currentYearId}
-                                    {yearStatus.isClosed && <span className="mr-2 text-amber-400">| 📦 مؤرشفة</span>}
-                                </div>
+                                <h1 className="text-base font-bold text-white">صندوق الحالات الطارئة</h1>
+                                <p className="text-[11px] text-emerald-400 font-medium">قرية محبران</p>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <button onClick={() => setShowArchivedYears(true)} className="bg-amber-500/80 px-3 py-1.5 rounded-xl text-[10px] font-bold">📂 السنوات السابقة</button>
-                                <button onClick={() => setShowSettings(!showSettings)} className="bg-white/20 px-3 py-1.5 rounded-xl text-[9px]">⚙️ إعدادات المسار</button>
-                                <div className="text-[8px] opacity-70">إشراف: مصطفى الشجاع<br/>تطوير: عمرو مسعد الشجاع</div>
+                            <div className="flex flex-col items-end">
+                                <button onClick={generatePDF} disabled={isPdfLoading} className={`${isPdfLoading ? 'bg-slate-600 animate-pulse' : 'bg-emerald-500'} px-4 py-2 rounded-xl text-[10px] font-bold mb-3 flex items-center gap-2 transition-all shadow-lg active:scale-95`}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3"/></svg>
+                                    {isPdfLoading ? 'جاري التحميل...' : 'تحميل التقرير PDF'}
+                                </button>
+                                <div className="text-[9px] opacity-70 text-left text-white/80 leading-relaxed">
+                                    <p>إشراف: مصطفى الشجاع</p>
+                                    <p>تطوير : عمرو مسعد الشجاع</p>
+                                </div>
                             </div>
                         </div>
                     </header>
 
-                    <main className="px-5 mt-6 pb-32">
-                        {/* لوحة الإعدادات */}
-                        {showSettings && (
-                            <div className="settings-panel">
-                                <h3 className="font-bold text-slate-800 text-sm mb-3">⚙️ إعدادات استيراد البيانات القديمة</h3>
-                                <label className="text-[10px] font-bold text-slate-500 block mb-1">مسار البيانات القديمة في Firebase:</label>
-                                <input 
-                                    type="text" 
-                                    value={oldDataPath} 
-                                    onChange={(e) => setOldDataPath(e.target.value)}
-                                    className="w-full bg-slate-50 p-3 rounded-xl text-sm font-mono text-slate-700 border focus:ring-2 focus:ring-emerald-400 outline-none mb-2"
-                                    placeholder="مثال: donors أو artifacts/amr4admin/public/data/donors"
-                                />
-                                <button onClick={handleTestPath} disabled={isTestingPath} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-[11px] font-bold mb-2 w-full">
-                                    {isTestingPath ? 'جاري الاختبار...' : '🔍 اختبار المسار'}
-                                </button>
-                                {pathTestResult && (
-                                    <div className={`test-result ${pathTestResult.success ? 'test-success' : 'test-error'}`}>
-                                        {pathTestResult.success 
-                                            ? `✅ تم العثور على ${pathTestResult.count} سجل في هذا المسار` 
-                                            : `❌ خطأ: ${pathTestResult.error}`}
+                    <main className="px-5 mt-8 pb-32">
+                        <div className="mb-6">
+                            <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex -space-x-1">
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse relative z-10"></span>
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500/30 animate-ping absolute"></span>
                                     </div>
-                                )}
-                                <p className="text-[9px] text-slate-400 mt-2">💡 يمكنك كتابة اسم الـ Collection فقط (مثل: donors) أو المسار الكامل (مثل: artifacts/amr4admin/public/data/donors)</p>
-                            </div>
-                        )}
-
-                        {/* زر عرض البيانات القديمة */}
-                        <div className="flex justify-between items-center mb-4">
-                            <button onClick={() => setShowOldData(!showOldData)} className={`px-3 py-1.5 rounded-xl text-[10px] font-bold ${showOldData ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                {showOldData ? '✓ عرض البيانات القديمة' : 'عرض البيانات القديمة'} ({oldDonors.length})
-                            </button>
-                            <span className="text-[9px] text-slate-400">إجمالي: {allDonors.length}</span>
-                        </div>
-
-                        {/* الإجماليات */}
-                        <div className="grid grid-cols-3 gap-3 mb-6">
-                            <div className="currency-card-sar p-3 rounded-2xl text-center"><p className="text-[8px] font-bold text-emerald-700">سعودي</p><p className="text-sm font-black text-emerald-900">{totals.sar.toLocaleString()}</p></div>
-                            <div className="currency-card-usd p-3 rounded-2xl text-center"><p className="text-[8px] font-bold text-blue-700">دولار</p><p className="text-sm font-black text-blue-900">{totals.usd.toLocaleString()}</p></div>
-                            <div className="currency-card-yer p-3 rounded-2xl text-center"><p className="text-[8px] font-bold text-amber-700">يمني</p><p className="text-sm font-black text-amber-900">{totals.yer.toLocaleString()}</p></div>
-                        </div>
-
-                        {/* البحث والفلترة */}
-                        <div className="space-y-3 mb-6">
-                            <input className="w-full bg-white p-3 rounded-xl text-sm shadow-sm outline-none" placeholder="ابحث عن مشترك..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
-                            <div className="flex bg-white p-1 rounded-xl gap-1">
-                                {['all', 'paid', 'partial', 'unpaid'].map(id => (
-                                    <button key={id} onClick={() => setFilter(id)} className={`flex-1 py-2 rounded-lg text-[9px] font-bold transition-all ${filter === id ? 'filter-active' : 'text-slate-400'}`}>
-                                        {id === 'all' ? 'الكل' : id === 'paid' ? 'مكتمل' : id === 'partial' ? 'جزئي' : 'انتظار'}
-                                    </button>
-                                ))}
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">موقعك الحالي:</span>
+                                    <span className="text-[11px] font-black text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{geoInfo.location}</span>
+                                </div>
+                                <div className="text-[9px] font-mono text-slate-300">{geoInfo.ip}</div>
                             </div>
                         </div>
 
-                        {/* قائمة المشتركين */}
-                        <div className="space-y-3">
-                            {filteredList.map(d => {
+                        {/* تبويب (علامة تبويب) بين قسم الحالات الطارئة وقسم مال الزكاة */}
+                        <div className="flex gap-2 bg-white p-2 rounded-3xl shadow-sm mb-8">
+                            <button onClick={() => setActiveTab('emergency')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 ${activeTab === 'emergency' ? 'tab-active' : 'tab-inactive'}`}>حالات الطوارئ</button>
+                            <button onClick={() => setActiveTab('zakat')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 ${activeTab === 'zakat' ? 'tab-active' : 'tab-inactive'}`}>مال الزكاة</button>
+                        </div>
+
+                        {/* عدادات العملات + عداد الزكاة (يظهر في الأعلى بجانب اليمني بشكل مميز) */}
+                        <div className="grid grid-cols-4 gap-2 mb-8">
+                            <div className="currency-card-sar p-3 rounded-2xl text-center shadow-sm">
+                                <p className="text-[8px] font-bold text-emerald-700 uppercase mb-1">سعودي</p>
+                                <p className="text-xs font-black text-emerald-900">{activeTab === 'emergency' ? totals.sar.toLocaleString() : zakatTotals.sar.toLocaleString()}</p>
+                            </div>
+                            <div className="currency-card-usd p-3 rounded-2xl text-center shadow-sm">
+                                <p className="text-[8px] font-bold text-blue-700 uppercase mb-1">دولار</p>
+                                <p className="text-xs font-black text-blue-900">{activeTab === 'emergency' ? totals.usd.toLocaleString() : zakatTotals.usd.toLocaleString()}</p>
+                            </div>
+                            <div className="currency-card-yer p-3 rounded-2xl text-center shadow-sm">
+                                <p className="text-[8px] font-bold text-amber-700 uppercase mb-1">يمني</p>
+                                <p className="text-xs font-black text-amber-900">{activeTab === 'emergency' ? totals.yer.toLocaleString() : zakatTotals.yer.toLocaleString()}</p>
+                            </div>
+                            {/* عداد مبلغ الزكاة الجديد بجانب العملات */}
+                            <div className="currency-card-zakat p-3 rounded-2xl text-center shadow-sm">
+                                <p className="text-[8px] font-bold text-purple-700 uppercase mb-1">مبلغ الزكاة</p>
+                                <p className="text-xs font-black text-purple-900">
+                                    {zakatTotals.sar.toLocaleString() + ' ريال | ' + zakatTotals.usd.toLocaleString() + '$ | ' + zakatTotals.yer.toLocaleString() + ' يمني'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* شريط البحث والفلاتر (للطوارئ فقط) */}
+                        <div className="space-y-4 mb-8">
+                            <input className="w-full bg-white p-4 pr-12 rounded-2xl text-sm font-bold shadow-sm outline-none ring-slate-100 focus:ring-2 transition-all" placeholder="ابحث باسم..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                            {activeTab === 'emergency' && (
+                                <div className="flex bg-white p-1.5 rounded-2xl gap-1 shadow-sm border overflow-x-auto no-scrollbar">
+                                    {['all', 'paid', 'partial', 'unpaid'].map(id => (
+                                        <button key={id} onClick={() => setFilter(id)} className={`flex-1 py-2.5 px-2 rounded-xl text-[10px] font-bold transition-all ${filter === id ? 'filter-active' : 'text-slate-400'}`}>
+                                            {id === 'all' ? 'الكل' : id === 'paid' ? 'المكتمل' : id === 'partial' ? 'جزئي' : 'الانتظار'}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* عرض القائمة بناءً على التبويب النشط */}
+                        <div className="space-y-5">
+                            {activeTab === 'emergency' && filteredEmergencyList.map(d => {
                                 const info = parseInfo(d);
-                                const entryPerson = d.createdBy || d.entryByName || d.editedBy || (d.isOldData ? 'بيانات قديمة' : 'غير معروف');
-                                const deviceData = d.createdDeviceInfo || d.entryDeviceInfo;
-                                const isOld = d.isOldData;
-                                
                                 return (
-                                    <div key={d.id} className={`bg-white p-4 rounded-2xl border shadow-sm relative group ${isOld ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}>
-                                        <div className="flex justify-between items-start">
+                                    <div key={d.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative group active:scale-[0.98] transition-transform">
+                                        <div className="flex justify-between items-start mb-3">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="font-bold text-slate-800">{d.name || 'غير معروف'}</h3>
-                                                    {isOld && <span className="old-data-badge">📦 بيانات سابقة</span>}
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-bold text-slate-800 text-base">{d.name}</h3>
+                                                    <span className="text-[7px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase font-bold">{d.location || 'غير معروف'}</span>
                                                 </div>
-                                                <div className="mt-2 space-y-1">
-                                                    <div className="device-detail"><span className="info-badge">📝 مدخل البيانات: {entryPerson}</span></div>
-                                                    {deviceData && !isOld && <div className="device-detail"><span className="info-badge">🌐 IP: {deviceData.ip || 'غير متاح'}</span><span className="info-badge">📍 {deviceData.location || 'غير متاح'}</span></div>}
-                                                    <div className="device-detail"><span className="info-badge">🕒 آخر تحديث: {formatDate(d.updatedAt)}</span><span className="info-badge">📅 المدة: {getDurationText(info.duration)}</span></div>
+                                                <div className="update-time-badge mb-2">تحديث: {formatUpdateDate(d.updatedAt)}</div>
+                                                <div className="text-[8px] text-slate-500 bg-slate-50 px-2 py-1 rounded-lg inline-flex items-center gap-1.5 border border-slate-100 flex-wrap">
+                                                    <span className="font-bold text-slate-700">بواسطة: {d.recordedBy || '---'}</span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <span className="font-mono">{d.ip || '---'}</span>
                                                 </div>
                                             </div>
-                                            <div className="text-left"><div className="text-lg font-black">{info.paid}</div><div className="text-[9px] text-slate-300 uppercase">{info.curr}</div></div>
+                                            <div className="text-left"><div className="text-lg font-black text-slate-900">{info.paid.toLocaleString()}</div><div className="text-[10px] font-bold text-slate-300 uppercase">{info.curr}</div></div>
                                         </div>
-                                        <div className="timeline-track mt-2"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
-                                        <div className="mt-1 text-[10px] text-slate-400 flex justify-between"><span>المقرر: {info.total}</span><span>المتبقي: {info.remaining}</span></div>
-                                        
-                                        {!yearStatus.isClosed && !isOld && (
-                                            <div className="absolute inset-0 bg-white/95 rounded-2xl flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => { setEditId(d.id); setForm({ name: d.name, totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100, entryByName: entryPerson }); setIsModalOpen(true); }} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold">تعديل</button>
-                                                <button onClick={async () => { if(confirm("حذف؟")) await db.collection('financialYears').doc(currentYearId).collection('donors').doc(d.id).delete(); }} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold">حذف</button>
-                                            </div>
-                                        )}
+                                        <div className="timeline-track"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
+                                        <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] flex items-center justify-center gap-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
+                                            <button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: d.recordedBy || 'مصطفى الشجاع', totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100 }); setIsModalOpen(true); }} className="p-3 px-6 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">تعديل</button>
+                                            <button onClick={async () => { if(confirm("حذف؟")) await db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors').doc(d.id).delete(); }} className="p-3 px-6 bg-rose-600 text-white rounded-2xl font-bold shadow-lg">حذف</button>
+                                        </div>
                                     </div>
                                 );
                             })}
-                            {filteredList.length === 0 && <div className="text-center py-10 text-slate-400">لا توجد بيانات</div>}
+                            
+                            {activeTab === 'zakat' && filteredZakatList.map(z => (
+                                <div key={z.id} className="bg-white p-6 rounded-[2.5rem] border border-purple-100 shadow-sm relative group">
+                                    <div className="flex justify-between items-start">
+                                        <div><h3 className="font-bold text-slate-800 text-lg">{z.name}</h3><p className="text-[9px] text-purple-500">مسجل بواسطة: {z.recordedBy}</p><p className="text-[9px] text-slate-400">{formatUpdateDate(z.updatedAt)}</p></div>
+                                        <div className="text-left"><div className="text-xl font-black text-purple-800">{parseFloat(z.amount).toLocaleString()} <span className="text-xs uppercase">{z.currency === 'sar' ? 'ريال سعودي' : z.currency === 'usd' ? 'دولار' : 'ريال يمني'}</span></div></div>
+                                    </div>
+                                    <div className="flex gap-3 mt-4">
+                                        <button onClick={() => { setEditZakatId(z.id); setZakatForm({ name: z.name, amount: z.amount, currency: z.currency, recordedBy: z.recordedBy }); setIsZakatModalOpen(true); }} className="flex-1 py-2 bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold">تعديل</button>
+                                        <button onClick={() => deleteZakatRecord(z.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </main>
 
-                    {!yearStatus.isClosed && (
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-100 to-transparent pointer-events-none">
-                            <div className="max-w-[480px] mx-auto pointer-events-auto">
-                                <button onClick={() => setIsModalOpen(true)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all text-sm">+ إضافة مشترك جديد</button>
-                            </div>
+                    {/* زر الإضافة المتغير حسب التبويب */}
+                    <div className="fixed bottom-0 left-0 right-0 p-6 z-40 bg-gradient-to-t from-slate-100 via-slate-100/90 to-transparent pointer-events-none">
+                        <div className="max-w-[480px] mx-auto pointer-events-auto">
+                            <button onClick={() => activeTab === 'emergency' ? setIsModalOpen(true) : setIsZakatModalOpen(true)} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-bold shadow-2xl active:scale-95 transition-all">
+                                {activeTab === 'emergency' ? 'إضافة مشترك جديد' : 'إضافة مال زكاة جديد'}
+                            </button>
                         </div>
-                    )}
+                    </div>
 
-                    {/* مودال الإضافة */}
-                    {isModalOpen && (
+                    {/* مودال الطوارئ */}
+                    {isModalOpen && (/* نفس المودال السابق لم يتغير شكله */ 
                         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onClick={closeModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-3xl p-5 max-h-[90vh] overflow-y-auto">
-                                <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-black">{editId ? 'تعديل' : 'إضافة مشترك'}</h2><button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 text-xl">×</button></div>
-                                <form onSubmit={handleSave} className="space-y-4">
-                                    <div><label className="required-field block text-[10px] font-bold text-slate-500 mb-1">اسم مدخل البيانات</label>
-                                    <select required className="w-full bg-amber-50 border-2 border-amber-200 p-3 rounded-xl text-sm" value={form.entryByName} onChange={e=>setForm({...form, entryByName: e.target.value})}>
-                                        <option value="">-- اختر اسمك --</option>
-                                        {dataEntryPersons.map(n => <option key={n} value={n}>{n}</option>)}
-                                        <option value="____جديد____">➕ إضافة اسم جديد...</option>
-                                    </select>
-                                    {form.entryByName === "____جديد____" && <input type="text" placeholder="اسمك الجديد" className="w-full mt-2 border p-3 rounded-xl text-sm" onChange={e=>setForm({...form, entryByName: e.target.value})} />}</div>
-                                    
-                                    <div><label className="required-field block text-[10px] font-bold text-slate-500 mb-1">اسم المشترك</label>
-                                    <input required placeholder="الاسم الرباعي" className="w-full bg-slate-50 p-3 rounded-xl text-sm" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} /></div>
-                                    
-                                    <div className="grid grid-cols-2 gap-3"><div><label className="text-[9px] font-bold text-slate-400">المبلغ</label><input required type="number" className="w-full bg-slate-50 p-3 rounded-xl text-sm" value={form.totalAmount} onChange={e=>setForm({...form, totalAmount: e.target.value})} /></div>
-                                    <div><label className="text-[9px] font-bold text-slate-400">العملة</label><select className="w-full bg-slate-50 p-3 rounded-xl text-sm" value={form.currency} onChange={e=>setForm({...form, currency:e.target.value})}><option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option></select></div></div>
-                                    
-                                    <div><label className="text-[9px] font-bold text-slate-400">المدة</label>
-                                    <div className="flex gap-1 bg-slate-50 p-1 rounded-xl"><button type="button" onClick={() => setForm({...form, duration: '3m'})} className={`flex-1 py-2 rounded-lg text-[9px] ${form.duration === '3m' ? 'bg-white shadow' : 'text-slate-400'}`}>٣ أشهر</button><button type="button" onClick={() => setForm({...form, duration: '6m'})} className={`flex-1 py-2 rounded-lg text-[9px] ${form.duration === '6m' ? 'bg-white shadow' : 'text-slate-400'}`}>٦ أشهر</button><button type="button" onClick={() => setForm({...form, duration: '1y'})} className={`flex-1 py-2 rounded-lg text-[9px] ${form.duration === '1y' ? 'bg-white shadow' : 'text-slate-400'}`}>سنة</button><button type="button" onClick={() => setForm({...form, duration: 'none'})} className={`flex-1 py-2 rounded-lg text-[9px] ${form.duration === 'none' ? 'bg-white shadow' : 'text-slate-400'}`}>أخرى</button></div></div>
-                                    
-                                    <div><label className="text-[9px] font-bold text-slate-400">حالة السداد</label>
-                                    <div className="flex gap-2"><button type="button" onClick={() => setForm({...form, isPaidStatus: true, paidAmount: form.totalAmount})} className={`flex-1 py-3 rounded-xl text-xs ${form.isPaidStatus ? 'bg-emerald-500 text-white' : 'bg-slate-50'}`}>مكتمل</button><button type="button" onClick={() => setForm({...form, isPaidStatus: false})} className={`flex-1 py-3 rounded-xl text-xs ${!form.isPaidStatus ? 'bg-amber-500 text-white' : 'bg-slate-50'}`}>جزئي</button></div></div>
-                                    
-                                    {!form.isPaidStatus && <div className="grid grid-cols-2 gap-3"><div><label className="text-[9px] font-bold text-slate-400">المدفوع</label><input type="number" className="w-full border p-3 rounded-xl" value={form.paidAmount} onChange={e=>setForm({...form, paidAmount:e.target.value})} /></div><div className="bg-rose-50 p-3 rounded-xl text-center"><p className="text-[9px] text-rose-400">المتبقي</p><p className="font-black text-rose-600">{currentRemaining}</p></div></div>}
-                                    
-                                    <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm">💾 حفظ البيانات</button>
+                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeModal}></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl">
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black">{editId ? 'تعديل' : 'إضافة مشترك'}</h2><button onClick={closeModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                                <form onSubmit={handleSave} className="space-y-6">
+                                    <input required placeholder="الاسم الكامل" className="w-full bg-slate-50 p-5 rounded-2xl" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
+                                    <select className="w-full bg-slate-100 p-4 rounded-2xl" value={form.recordedBy} onChange={e=>setForm({...form, recordedBy:e.target.value})}><option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option></select>
+                                    <div className="grid grid-cols-2 gap-4"><input type="number" placeholder="المبلغ الكلي" className="bg-slate-50 p-5 rounded-2xl" value={form.totalAmount} onChange={e=>setForm({...form, totalAmount:e.target.value})} /><select className="bg-slate-50 p-5 rounded-2xl" value={form.currency} onChange={e=>setForm({...form, currency:e.target.value})}><option value="sar">سعودي</option><option value="usd">دولار</option><option value="yer">يمني</option></select></div>
+                                    <div className="flex gap-2"><button type="button" onClick={() => setForm({...form, isPaidStatus: true, paidAmount: form.totalAmount})} className={`flex-1 py-4 rounded-2xl ${form.isPaidStatus ? 'bg-emerald-600 text-white' : 'bg-slate-50'}`}>تم السداد</button><button type="button" onClick={() => setForm({...form, isPaidStatus: false})} className={`flex-1 py-4 rounded-2xl ${!form.isPaidStatus ? 'bg-amber-500 text-white' : 'bg-slate-50'}`}>جزئي</button></div>
+                                    {!form.isPaidStatus && <input type="number" placeholder="المبلغ المدفوع" className="w-full border p-5 rounded-2xl" value={form.paidAmount} onChange={e=>setForm({...form, paidAmount:e.target.value})} />}
+                                    <button className="w-full bg-slate-900 text-white py-5 rounded-2xl">{editId ? 'تحديث' : 'تأكيد'}</button>
                                 </form>
                             </div>
                         </div>
                     )}
-
-                    <div id="pdf-export-container"></div>
+                    
+                    {/* مودال الزكاة الجديد */}
+                    {isZakatModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeZakatModal}></div>
+                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-purple-500">
+                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-purple-800">{editZakatId ? 'تعديل مال زكاة' : 'إضافة مال زكاة'}</h2><button onClick={closeZakatModal} className="p-3 bg-slate-100 rounded-full">×</button></div>
+                                <form onSubmit={handleSaveZakat} className="space-y-6">
+                                    <input required placeholder="اسم المتبرع / الجهة" className="w-full bg-slate-50 p-5 rounded-2xl" value={zakatForm.name} onChange={e=>setZakatForm({...zakatForm, name:e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-4"><input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.amount} onChange={e=>setZakatForm({...zakatForm, amount:e.target.value})} /><select className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.currency} onChange={e=>setZakatForm({...zakatForm, currency:e.target.value})}><option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option></select></div>
+                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={zakatForm.recordedBy} onChange={e=>setZakatForm({...zakatForm, recordedBy:e.target.value})}><option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option></select>
+                                    <button className="w-full bg-purple-700 text-white py-5 rounded-2xl font-bold">{editZakatId ? 'تحديث الزكاة' : 'إضافة الزكاة'}</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
