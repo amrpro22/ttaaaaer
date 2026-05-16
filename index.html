@@ -115,8 +115,7 @@
         const APP_PATH = "amr4admin";
 
         const App = () => {
-            const [donors, setDonors] = useState([]);
-            const [zakatRecords, setZakatRecords] = useState([]);
+            const [allRecords, setAllRecords] = useState([]); // جميع السجلات (طوارئ + زكاة)
             const [user, setUser] = useState(null);
             const [filter, setFilter] = useState('all'); 
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,6 +126,7 @@
             
             const [activeTab, setActiveTab] = useState('emergency');
             
+            // نموذج الزكاة
             const [zakatForm, setZakatForm] = useState({ 
                 name: '', 
                 amount: '', 
@@ -177,6 +177,7 @@
                 fetchGeoData();
             }, []);
 
+            // نموذج الحالات الطارئة
             const [form, setForm] = useState({ 
                 name: '', 
                 recordedBy: 'مصطفى الشجاع',
@@ -195,27 +196,24 @@
                 return unsub;
             }, []);
 
-            // جلب بيانات الحالات الطارئة
+            // جلب جميع السجلات من مجموعة donors (بما فيها الزكاة)
             useEffect(() => {
                 if (!user) return;
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 return ref.onSnapshot(snap => {
                     const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setDonors(data);
+                    setAllRecords(data);
                 }, err => console.error("Firestore Error:", err));
             }, [user]);
 
-            // جلب بيانات الزكاة - تم إصلاح المسار ليكون صحيحاً
-            useEffect(() => {
-                if (!user) return;
-                // استخدام نفس هيكلية donors ولكن مع مجموعة منفصلة باسم zakat_items
-                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
-                return zakatRef.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    console.log("تم جلب بيانات الزكاة:", data.length);
-                    setZakatRecords(data);
-                }, err => console.error("Zakat Firestore Error:", err));
-            }, [user]);
+            // فصل السجلات: طوارئ (بدون حقل type أو type != 'zakat') وزكاة (type === 'zakat')
+            const donors = useMemo(() => {
+                return allRecords.filter(record => record.type !== 'zakat');
+            }, [allRecords]);
+
+            const zakatRecords = useMemo(() => {
+                return allRecords.filter(record => record.type === 'zakat');
+            }, [allRecords]);
 
             const parseInfo = (d) => {
                 const note = d.note || "";
@@ -272,6 +270,7 @@
                 return list;
             }, [zakatRecords, searchTerm]);
 
+            // حفظ الحالة الطارئة
             const handleSave = async (e) => {
                 e.preventDefault();
                 const now = Date.now();
@@ -284,7 +283,8 @@
                     ip: geoInfo.ip,
                     location: geoInfo.location,
                     note: note, 
-                    updatedAt: now 
+                    updatedAt: now,
+                    // لا نضيف type هنا، فالسجلات بدون type تعتبر طوارئ
                 };
 
                 try {
@@ -300,12 +300,11 @@
                 }
             };
 
-            // حفظ الزكاة - تم إصلاح المسار ليكون مطابقاً لمصدر البيانات
+            // حفظ الزكاة - استخدام نفس مجموعة donors مع إضافة حقل type: "zakat"
             const handleSaveZakat = async (e) => {
                 e.preventDefault();
                 const now = Date.now();
-                // استخدام نفس المجموعة zakat_items لضمان التطابق
-                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
+                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
                 
                 const data = {
                     name: zakatForm.name,
@@ -315,6 +314,7 @@
                     ip: geoInfo.ip,
                     location: geoInfo.location,
                     updatedAt: now,
+                    type: 'zakat',  // علامة مميزة لسجلات الزكاة
                     createdAt: editZakatId ? (zakatRecords.find(r => r.id === editZakatId)?.createdAt || now) : now
                 };
                 
@@ -322,14 +322,13 @@
                 
                 try {
                     if (editZakatId) {
-                        await zakatRef.doc(editZakatId).update(data);
+                        await ref.doc(editZakatId).update(data);
                         console.log("تم تحديث الزكاة بنجاح");
                     } else {
-                        await zakatRef.add(data);
+                        await ref.add(data);
                         console.log("تم إضافة الزكاة بنجاح");
                     }
                     closeZakatModal();
-                    // لا حاجة لتحديث الحالة يدوياً لأن onSnapshot سيتولى ذلك
                 } catch (error) {
                     console.error("Zakat Save Error:", error);
                     alert("حدث خطأ في حفظ الزكاة: " + error.message);
@@ -338,8 +337,15 @@
             
             const deleteZakatRecord = async (id) => {
                 if (confirm("هل تريد حذف سجل الزكاة نهائياً؟")) {
-                    const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
-                    await zakatRef.doc(id).delete();
+                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
+                    await ref.doc(id).delete();
+                }
+            };
+            
+            const deleteEmergencyRecord = async (id) => {
+                if (confirm("هل تريد حذف هذا السجل نهائياً؟")) {
+                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
+                    await ref.doc(id).delete();
                 }
             };
 
@@ -530,8 +536,10 @@
                             </div>
                             <div className="currency-card-zakat p-3 rounded-2xl text-center shadow-sm">
                                 <p className="text-[8px] font-bold text-purple-700 uppercase mb-1">مبلغ الزكاة</p>
-                                <p className="text-xs font-black text-purple-900">
-                                    {zakatTotals.sar.toLocaleString()} ريال | {zakatTotals.usd.toLocaleString()} $ | {zakatTotals.yer.toLocaleString()} يمني
+                                <p className="text-[9px] font-black text-purple-900 leading-tight">
+                                    {zakatTotals.sar.toLocaleString()} ر.س<br/>
+                                    {zakatTotals.usd.toLocaleString()} $<br/>
+                                    {zakatTotals.yer.toLocaleString()} ي.ي
                                 </p>
                             </div>
                         </div>
@@ -572,7 +580,7 @@
                                         <div className="timeline-track"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
                                         <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] flex items-center justify-center gap-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
                                             <button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: d.recordedBy || 'مصطفى الشجاع', totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100 }); setIsModalOpen(true); }} className="p-3 px-6 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">تعديل</button>
-                                            <button onClick={async () => { if(confirm("حذف؟")) await db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors').doc(d.id).delete(); }} className="p-3 px-6 bg-rose-600 text-white rounded-2xl font-bold shadow-lg">حذف</button>
+                                            <button onClick={() => deleteEmergencyRecord(d.id)} className="p-3 px-6 bg-rose-600 text-white rounded-2xl font-bold shadow-lg">حذف</button>
                                         </div>
                                     </div>
                                 );
