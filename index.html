@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>لوحة تسجيل المصروفات - magdi-50c75</title>
+    <title>لوحة تسجيل المصروفات - Realtime Mode</title>
 
     <style>
         *{
@@ -244,7 +244,7 @@
             <div class="title">لوحة تسجيل المصروفات</div>
             <div class="sync-info">
                 <span class="sync-icon" id="statusIcon"></span>
-                <span id="statusText">جاري الاتصال بالسحابة...</span>
+                <span id="statusText">جاري الاتصال بـ Realtime DB...</span>
             </div>
         </div>
 
@@ -320,65 +320,57 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getDatabase, ref, push, onValue, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
+    // إعدادات مشروع magdi-50c75
     const firebaseConfig = {
       apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
       authDomain: "magdi-50c75.firebaseapp.com",
+      databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com", // رابط Realtime Database
       projectId: "magdi-50c75",
       storageBucket: "magdi-50c75.firebasestorage.app",
       messagingSenderId: "329518389376",
-      appId: "1:329518389376:web:f2f73f4a257dcb84efee65",
-      measurementId: "G-E3TK0NJ1PJ"
+      appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = "magdi-expense-app";
+    const db = getDatabase(app);
+    const dbPath = "expenses"; // المسار الذي سيتم الحفظ فيه
 
-    let user = null;
-
-    // محاولة الاتصال
-    const initApp = async () => {
-        try {
-            await signInAnonymously(auth);
-        } catch (e) {
-            console.error("Auth error", e);
-            document.getElementById("statusText").innerText = "خطأ في الهوية - فعل Anonymous Auth";
-        }
-    };
-
-    onAuthStateChanged(auth, (u) => {
-        user = u;
-        if(u) {
-            document.getElementById("statusIcon").classList.add("online");
-            document.getElementById("statusText").innerText = "متصل بمشروع magdi-50c75";
-            fetchData();
+    // تحديث الحالة عند الاتصال
+    const connectedRef = ref(db, ".info/connected");
+    onValue(connectedRef, (snap) => {
+        const statusIcon = document.getElementById("statusIcon");
+        const statusText = document.getElementById("statusText");
+        if (snap.val() === true) {
+            statusIcon.classList.add("online");
+            statusText.innerText = "متصل بـ Realtime Database";
+        } else {
+            statusIcon.classList.remove("online");
+            statusText.innerText = "فصل الاتصال.. جاري المحاولة";
         }
     });
 
-    initApp();
-
+    // جلب البيانات لحظياً
     function fetchData() {
-        const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
-        
-        onSnapshot(expensesRef, (snapshot) => {
+        const expensesRef = ref(db, dbPath);
+        onValue(expensesRef, (snapshot) => {
             const list = document.getElementById("expenseList");
             const count = document.getElementById("recordCount");
             list.innerHTML = "";
             
-            const docs = [];
-            snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
-            
-            docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            count.innerText = `${docs.length} سجل محفوظ`;
-
-            if (docs.length === 0) {
+            const data = snapshot.val();
+            if (!data) {
                 list.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">لا توجد سجلات بعد.</p>';
+                count.innerText = "0 سجل محفوظ";
                 return;
             }
+
+            const docs = Object.keys(data).map(key => ({id: key, ...data[key]}));
+            
+            // ترتيب الأحدث أولاً
+            docs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            count.innerText = `${docs.length} سجل محفوظ`;
 
             docs.forEach(item => {
                 const div = document.createElement("div");
@@ -397,22 +389,17 @@
                 `;
                 list.appendChild(div);
             });
-        }, (err) => {
-            console.error("Fetch error:", err);
-            document.getElementById("expenseList").innerHTML = `<p style="color:red; text-align:center">خطأ في جلب البيانات: تأكد من تفعيل Firestore.</p>`;
         });
     }
 
+    fetchData();
+
+    // إرسال البيانات
     const form = document.getElementById("expenseForm");
     const loader = document.getElementById("loadingOverlay");
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if(!user) {
-            alert("لا يوجد اتصال بالسحابة حالياً، يرجى إعادة تحميل الصفحة.");
-            return;
-        }
-
         loader.style.display = "flex";
 
         const payload = {
@@ -423,34 +410,20 @@
             currency: document.getElementById("currency").value,
             date: document.getElementById("date").value,
             addedBy: document.getElementById("addedBy").value,
-            createdAt: serverTimestamp(),
-            uid: user.uid
+            timestamp: serverTimestamp() // وقت السيرفر للترتيب
         };
 
-        // تعيين مهلة زمنية للتوقف عن التحميل إذا لم يستجب Firestore
-        const timeout = setTimeout(() => {
-            loader.style.display = "none";
-            alert("استغرق الطلب وقتاً طويلاً. تأكد من إعداد قواعد الحماية (Rules) في Firebase وافتح الـ Console للتأكد من الخطأ.");
-        }, 10000);
-
         try {
-            const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
-            await addDoc(expensesRef, payload);
-            clearTimeout(timeout); // إلغاء المهلة عند النجاح
+            const newListRef = push(ref(db, dbPath));
+            await set(newListRef, payload);
             form.reset();
             document.getElementById('date').valueAsDate = new Date();
-            loader.style.display = "none";
-            alert("تم حفظ البيانات بنجاح!");
+            alert("تم الحفظ بنجاح!");
         } catch (err) {
-            clearTimeout(timeout);
+            console.error(err);
+            alert("فشل الحفظ: تأكد أنك في قسم Realtime Database وليس Firestore.");
+        } finally {
             loader.style.display = "none";
-            console.error("Add error:", err);
-            
-            if (err.code === 'permission-denied') {
-                alert("خطأ: تم رفض الوصول. يرجى تحديث قواعد الحماية (Rules) في Firebase.");
-            } else {
-                alert("حدث خطأ: " + err.message);
-            }
         }
     });
 
@@ -460,4 +433,4 @@
 </script>
 </body>
 </html>
-
+```
