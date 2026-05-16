@@ -53,7 +53,7 @@
         .currency-card-sar { border-top: 4px solid #10b981; background: #ecfdf5; }
         .currency-card-usd { border-top: 4px solid #3b82f6; background: #eff6ff; }
         .currency-card-yer { border-top: 4px solid #f59e0b; background: #fffbeb; }
-        .currency-card-zakat { border-top: 4px solid #8b5cf6; background: #f5f3ff; } /* لون مميز للزكاة */
+        .currency-card-zakat { border-top: 4px solid #8b5cf6; background: #f5f3ff; }
 
         .timeline-track {
             height: 8px;
@@ -82,7 +82,6 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* تبويب نشط */
         .tab-active {
             background-color: #0f172a;
             color: white;
@@ -117,7 +116,7 @@
 
         const App = () => {
             const [donors, setDonors] = useState([]);
-            const [zakatRecords, setZakatRecords] = useState([]); // حالة خاصة بمال الزكاة
+            const [zakatRecords, setZakatRecords] = useState([]);
             const [user, setUser] = useState(null);
             const [filter, setFilter] = useState('all'); 
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -126,10 +125,8 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [geoInfo, setGeoInfo] = useState({ ip: '...', location: 'تحديد الموقع...' });
             
-            // State للتبويب النشط: 'emergency' أو 'zakat'
             const [activeTab, setActiveTab] = useState('emergency');
             
-            // نموذج الزكاة
             const [zakatForm, setZakatForm] = useState({ 
                 name: '', 
                 amount: '', 
@@ -139,7 +136,6 @@
             const [editZakatId, setEditZakatId] = useState(null);
             const [isZakatModalOpen, setIsZakatModalOpen] = useState(false);
 
-            // جلب بيانات الموقع
             const fetchGeoData = async () => {
                 const providers = [
                     { url: 'https://ipapi.co/json/', map: (d) => ({ ip: d.ip, location: d.country_name }) },
@@ -181,7 +177,6 @@
                 fetchGeoData();
             }, []);
 
-            // نموذج الحالات الطارئة
             const [form, setForm] = useState({ 
                 name: '', 
                 recordedBy: 'مصطفى الشجاع',
@@ -192,7 +187,6 @@
                 isPaidStatus: false 
             });
 
-            // المصادقة
             useEffect(() => {
                 const unsub = auth.onAuthStateChanged((u) => {
                     if (!u) auth.signInAnonymously();
@@ -201,7 +195,7 @@
                 return unsub;
             }, []);
 
-            // جلب بيانات الحالات الطارئة (المشتركين)
+            // جلب بيانات الحالات الطارئة
             useEffect(() => {
                 if (!user) return;
                 const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
@@ -211,17 +205,18 @@
                 }, err => console.error("Firestore Error:", err));
             }, [user]);
 
-            // جلب بيانات مال الزكاة من مجموعة منفصلة 'zakat_funds'
+            // جلب بيانات الزكاة - تم إصلاح المسار ليكون صحيحاً
             useEffect(() => {
                 if (!user) return;
-                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
+                // استخدام نفس هيكلية donors ولكن مع مجموعة منفصلة باسم zakat_items
+                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
                 return zakatRef.onSnapshot(snap => {
                     const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log("تم جلب بيانات الزكاة:", data.length);
                     setZakatRecords(data);
                 }, err => console.error("Zakat Firestore Error:", err));
             }, [user]);
 
-            // دالة تحليل بيانات الطوارئ
             const parseInfo = (d) => {
                 const note = d.note || "";
                 const total = parseFloat((note.match(/T:(\d+(\.\d+)?)/) || [0, 0])[1]);
@@ -240,7 +235,6 @@
                 return { total, paid, remaining: Math.max(0, total - paid), curr, progress, color, duration };
             };
 
-            // إجماليات الطوارئ (ريال سعودي، دولار، يمني)
             const totals = useMemo(() => {
                 const sums = { sar: 0, usd: 0, yer: 0 };
                 donors.forEach(d => {
@@ -250,7 +244,6 @@
                 return sums;
             }, [donors]);
 
-            // إجمالي الزكاة لكل عملة (نفس العملات)
             const zakatTotals = useMemo(() => {
                 const sums = { sar: 0, usd: 0, yer: 0 };
                 zakatRecords.forEach(record => {
@@ -261,7 +254,6 @@
                 return sums;
             }, [zakatRecords]);
 
-            // فلترة قائمة الطوارئ
             const filteredEmergencyList = useMemo(() => {
                 let list = [...donors].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
                 if (searchTerm) list = list.filter(d => d.name.includes(searchTerm));
@@ -274,14 +266,12 @@
                 });
             }, [donors, filter, searchTerm]);
 
-            // فلترة قائمة الزكاة حسب البحث
             const filteredZakatList = useMemo(() => {
                 let list = [...zakatRecords].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 if (searchTerm) list = list.filter(z => z.name.includes(searchTerm));
                 return list;
             }, [zakatRecords, searchTerm]);
 
-            // حفظ الحالة الطارئة
             const handleSave = async (e) => {
                 e.preventDefault();
                 const now = Date.now();
@@ -306,14 +296,16 @@
                     closeModal();
                 } catch (error) {
                     console.error("Firestore Save Error:", error);
+                    alert("حدث خطأ في حفظ البيانات: " + error.message);
                 }
             };
 
-            // حفظ مال الزكاة
+            // حفظ الزكاة - تم إصلاح المسار ليكون مطابقاً لمصدر البيانات
             const handleSaveZakat = async (e) => {
                 e.preventDefault();
                 const now = Date.now();
-                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
+                // استخدام نفس المجموعة zakat_items لضمان التطابق
+                const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
                 
                 const data = {
                     name: zakatForm.name,
@@ -326,21 +318,27 @@
                     createdAt: editZakatId ? (zakatRecords.find(r => r.id === editZakatId)?.createdAt || now) : now
                 };
                 
+                console.log("جاري حفظ الزكاة:", data);
+                
                 try {
                     if (editZakatId) {
                         await zakatRef.doc(editZakatId).update(data);
+                        console.log("تم تحديث الزكاة بنجاح");
                     } else {
                         await zakatRef.add(data);
+                        console.log("تم إضافة الزكاة بنجاح");
                     }
                     closeZakatModal();
+                    // لا حاجة لتحديث الحالة يدوياً لأن onSnapshot سيتولى ذلك
                 } catch (error) {
                     console.error("Zakat Save Error:", error);
+                    alert("حدث خطأ في حفظ الزكاة: " + error.message);
                 }
             };
             
             const deleteZakatRecord = async (id) => {
                 if (confirm("هل تريد حذف سجل الزكاة نهائياً؟")) {
-                    const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_funds');
+                    const zakatRef = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('zakat_items');
                     await zakatRef.doc(id).delete();
                 }
             };
@@ -362,7 +360,6 @@
                 return new Date(ts).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             };
 
-            // توليد PDF (نفس الوظيفة السابقة مع دعم البيانات حسب التبويب لكن مع الحفاظ على الوظيفة الأصلية)
             const generatePDF = async () => {
                 if (isPdfLoading) return;
                 setIsPdfLoading(true);
@@ -513,13 +510,11 @@
                             </div>
                         </div>
 
-                        {/* تبويب (علامة تبويب) بين قسم الحالات الطارئة وقسم مال الزكاة */}
                         <div className="flex gap-2 bg-white p-2 rounded-3xl shadow-sm mb-8">
                             <button onClick={() => setActiveTab('emergency')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 ${activeTab === 'emergency' ? 'tab-active' : 'tab-inactive'}`}>حالات الطوارئ</button>
                             <button onClick={() => setActiveTab('zakat')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 ${activeTab === 'zakat' ? 'tab-active' : 'tab-inactive'}`}>مال الزكاة</button>
                         </div>
 
-                        {/* عدادات العملات + عداد الزكاة (يظهر في الأعلى بجانب اليمني بشكل مميز) */}
                         <div className="grid grid-cols-4 gap-2 mb-8">
                             <div className="currency-card-sar p-3 rounded-2xl text-center shadow-sm">
                                 <p className="text-[8px] font-bold text-emerald-700 uppercase mb-1">سعودي</p>
@@ -533,16 +528,14 @@
                                 <p className="text-[8px] font-bold text-amber-700 uppercase mb-1">يمني</p>
                                 <p className="text-xs font-black text-amber-900">{activeTab === 'emergency' ? totals.yer.toLocaleString() : zakatTotals.yer.toLocaleString()}</p>
                             </div>
-                            {/* عداد مبلغ الزكاة الجديد بجانب العملات */}
                             <div className="currency-card-zakat p-3 rounded-2xl text-center shadow-sm">
                                 <p className="text-[8px] font-bold text-purple-700 uppercase mb-1">مبلغ الزكاة</p>
                                 <p className="text-xs font-black text-purple-900">
-                                    {zakatTotals.sar.toLocaleString() + ' ريال | ' + zakatTotals.usd.toLocaleString() + '$ | ' + zakatTotals.yer.toLocaleString() + ' يمني'}
+                                    {zakatTotals.sar.toLocaleString()} ريال | {zakatTotals.usd.toLocaleString()} $ | {zakatTotals.yer.toLocaleString()} يمني
                                 </p>
                             </div>
                         </div>
 
-                        {/* شريط البحث والفلاتر (للطوارئ فقط) */}
                         <div className="space-y-4 mb-8">
                             <input className="w-full bg-white p-4 pr-12 rounded-2xl text-sm font-bold shadow-sm outline-none ring-slate-100 focus:ring-2 transition-all" placeholder="ابحث باسم..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
                             {activeTab === 'emergency' && (
@@ -556,7 +549,6 @@
                             )}
                         </div>
 
-                        {/* عرض القائمة بناءً على التبويب النشط */}
                         <div className="space-y-5">
                             {activeTab === 'emergency' && filteredEmergencyList.map(d => {
                                 const info = parseInfo(d);
@@ -601,7 +593,6 @@
                         </div>
                     </main>
 
-                    {/* زر الإضافة المتغير حسب التبويب */}
                     <div className="fixed bottom-0 left-0 right-0 p-6 z-40 bg-gradient-to-t from-slate-100 via-slate-100/90 to-transparent pointer-events-none">
                         <div className="max-w-[480px] mx-auto pointer-events-auto">
                             <button onClick={() => activeTab === 'emergency' ? setIsModalOpen(true) : setIsZakatModalOpen(true)} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-bold shadow-2xl active:scale-95 transition-all">
@@ -610,8 +601,7 @@
                         </div>
                     </div>
 
-                    {/* مودال الطوارئ */}
-                    {isModalOpen && (/* نفس المودال السابق لم يتغير شكله */ 
+                    {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeModal}></div>
                             <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl">
@@ -628,7 +618,6 @@
                         </div>
                     )}
                     
-                    {/* مودال الزكاة الجديد */}
                     {isZakatModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
                             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeZakatModal}></div>
