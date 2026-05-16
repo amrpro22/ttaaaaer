@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>لوحة تسجيل المصروفات</title>
+    <title>لوحة تسجيل المصروفات - magdi-50c75</title>
 
     <style>
         *{
@@ -16,118 +16,105 @@
         }
 
         body{
-            background:#f0f2f5;
-            padding:20px;
+            background:#f8fafc;
+            padding:15px;
             color: #1e293b;
             overflow-x: hidden;
         }
 
         .container{
-            max-width:900px;
+            max-width:800px;
             margin:auto;
         }
 
         .card{
             background:#fff;
-            border-radius:18px;
+            border-radius:20px;
             padding:25px;
-            box-shadow:0 10px 25px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
+            box-shadow:0 15px 35px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border: 1px solid #f1f5f9;
         }
 
         .header-section {
             text-align: center;
             margin-bottom: 25px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 15px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
         }
 
         .title{
             color:#1e3a8a;
-            font-size:28px;
-            font-weight:bold;
-            margin-bottom: 5px;
+            font-size:26px;
+            font-weight:800;
+            margin-bottom: 8px;
         }
 
         .sync-info {
             color: #64748b;
-            font-size: 14px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .sync-icon {
-            width: 12px;
-            height: 12px;
-            background: #22c55e;
+            width: 10px;
+            height: 10px;
+            background: #cbd5e1;
             border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-            animation: pulse 2s infinite;
+            transition: 0.3s;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.7; }
-            70% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.7; }
-        }
+        .online { background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
 
         .grid{
             display:grid;
             grid-template-columns:1fr 1fr;
-            gap:18px;
+            gap:15px;
         }
 
-        .full{
-            grid-column:1 / -1;
-        }
+        .full{ grid-column: 1 / -1; }
 
         label{
             display:block;
-            margin-bottom:8px;
+            margin-bottom:6px;
             color:#475569;
             font-weight:600;
-            font-size:14px;
+            font-size:13px;
         }
 
         input, select, textarea{
             width:100%;
-            padding:12px;
-            border:1px solid #cbd5e1;
-            border-radius:10px;
+            padding:14px;
+            border:1.5px solid #e2e8f0;
+            border-radius:12px;
             outline:none;
             font-size:16px; 
-            transition:0.3s;
-            background:#f8fafc;
+            transition:0.2s;
+            background:#ffffff;
             appearance: none;
             -webkit-appearance: none;
         }
 
         input:focus, select:focus, textarea:focus{
             border-color:#2563eb;
-            background:#fff;
-            box-shadow:0 0 0 4px rgba(37, 99, 235, 0.1);
+            box-shadow:0 0 0 4px rgba(37, 99, 235, 0.08);
         }
 
         textarea{
-            resize:none;
-            min-height:100px;
+            min-height:90px;
+            resize: none;
         }
 
         .amount-box{
             display:flex;
-            gap:10px;
+            gap:8px;
         }
 
-        .amount-box input{
-            flex:1;
-        }
-
-        .amount-box select{
-            width:140px;
-        }
+        .amount-box input { flex: 1; }
+        .amount-box select { width: 120px; }
 
         .btn{
             width:100%;
@@ -136,8 +123,8 @@
             background:#2563eb;
             color:white;
             padding:16px;
-            border-radius:12px;
-            font-size:17px;
+            border-radius:15px;
+            font-size:18px;
             cursor:pointer;
             font-weight:bold;
             transition:0.3s;
@@ -145,129 +132,110 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
-            user-select: none;
-            -webkit-user-select: none;
         }
 
-        .btn:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        .btn:hover:not(:disabled){
-            background:#1d4ed8;
-            transform: translateY(-1px);
-        }
-
-        .btn:active:not(:disabled){
-            transform: translateY(0);
-        }
-
-        .credits {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 14px;
-            color: #64748b;
-            border-top: 1px solid #f1f5f9;
-            padding-top: 15px;
-            line-height: 1.8;
-        }
-
-        .credits span { display: block; }
-        .credits b { color: #1e3a8a; }
+        .btn:active{ transform: scale(0.98); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
         .history-card {
             background: #fff;
-            border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
         }
 
         .history-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 15px;
             color: #1e3a8a;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .expense-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .expense-list { display: flex; flex-direction: column; gap: 12px; }
 
         .expense-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            border-radius: 15px;
             padding: 15px;
             background: #ffffff;
+            transition: 0.2s;
         }
 
         .item-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
-        .item-beneficiary { font-weight: bold; color: #1e293b; }
-        .item-amount { color: #059669; font-weight: 800; }
-        .item-details { font-size: 14px; color: #64748b; margin-bottom: 10px; }
+        .item-beneficiary { font-weight: 700; color: #0f172a; }
+        .item-amount { color: #16a34a; font-weight: 800; font-size: 1.1rem; }
+        .item-details { font-size: 14px; color: #64748b; margin: 8px 0; line-height: 1.5; }
         
         .item-footer {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
-            border-top: 1px dashed #e2e8f0;
-            padding-top: 10px;
+            border-top: 1px solid #f8fafc;
+            padding-top: 8px;
+            margin-top: 5px;
         }
 
         .badge {
-            padding: 4px 10px;
-            border-radius: 20px;
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 8px;
             font-size: 11px;
             font-weight: bold;
+            background: #f1f5f9;
+            color: #475569;
         }
 
-        .badge-medical { background: #fee2e2; color: #dc2626; }
-        .badge-financial { background: #dcfce7; color: #166534; }
-        .badge-other { background: #f1f5f9; color: #475569; }
-
-        #loadingOverlay {
+        .loading-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.9);
             display: none;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 9999;
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
+            width: 45px;
+            height: 45px;
+            border: 4px solid #f1f5f9;
             border-top: 4px solid #2563eb;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        @media(max-width:700px){
-            .grid{ grid-template-columns:1fr; }
-            .amount-box{ flex-direction:column; }
-            .amount-box select{ width:100%; }
+        @media(max-width:600px){
+            .grid { grid-template-columns: 1fr; }
         }
+
+        .credits {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+        }
+        .credits b { color: #334155; }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
+<div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
+    <p style="margin-top: 15px; color: #1e3a8a; font-weight: bold;">جاري معالجة الطلب...</p>
 </div>
 
 <div class="container">
@@ -276,7 +244,7 @@
             <div class="title">لوحة تسجيل المصروفات</div>
             <div class="sync-info">
                 <span class="sync-icon" id="statusIcon"></span>
-                <span id="statusText">تتم مزامنة البيانات مع لوحة التحكم الرئيسية</span>
+                <span id="statusText">جاري الاتصال بالسحابة...</span>
             </div>
         </div>
 
@@ -284,16 +252,16 @@
             <div class="grid">
                 <div>
                     <label>اسم المستفيد</label>
-                    <input type="text" id="beneficiaryName" placeholder="اكتب اسم المستفيد" required>
+                    <input type="text" id="beneficiaryName" placeholder="أدخل الاسم الرباعي" required>
                 </div>
 
                 <div>
                     <label>نوع الحالة</label>
                     <select id="caseType" required>
-                        <option value="">اختر نوع الحالة</option>
+                        <option value="">-- اختر النوع --</option>
                         <option value="حالة مرضية">حالة مرضية</option>
-                        <option value="حالة وفاة">حالة وفاة</option>
                         <option value="مساعدة مالية">مساعدة مالية</option>
+                        <option value="حالة وفاة">حالة وفاة</option>
                         <option value="حادث">حادث</option>
                         <option value="حالة إنسانية">حالة إنسانية</option>
                         <option value="أخرى">أخرى</option>
@@ -301,14 +269,14 @@
                 </div>
 
                 <div class="full">
-                    <label>تفاصيل الحالة</label>
-                    <textarea id="caseDetails" placeholder="اكتب تفاصيل الحالة بشكل كامل..." spellcheck="false"></textarea>
+                    <label>التفاصيل والملاحظات</label>
+                    <textarea id="caseDetails" placeholder="اكتب شرحاً مختصراً للحالة..."></textarea>
                 </div>
 
                 <div>
-                    <label>المبلغ المنفق</label>
+                    <label>المبلغ</label>
                     <div class="amount-box">
-                        <input type="number" id="amount" placeholder="المبلغ" required>
+                        <input type="number" id="amount" placeholder="0.00" required>
                         <select id="currency">
                             <option value="ريال يمني">ريال يمني</option>
                             <option value="ريال سعودي">ريال سعودي</option>
@@ -318,34 +286,34 @@
                 </div>
 
                 <div>
-                    <label>تاريخ التوثيق</label>
+                    <label>تاريخ الصرف</label>
                     <input type="date" id="date" required>
                 </div>
 
                 <div class="full">
-                    <label>تم الإدخال بواسطة <span style="color:red">*</span></label>
-                    <input type="text" id="addedBy" placeholder="اسم مدخل البيانات" required>
+                    <label>مدخل البيانات</label>
+                    <input type="text" id="addedBy" placeholder="اسمك الكامل" required>
                 </div>
             </div>
 
             <button type="submit" class="btn" id="submitBtn">
-                <span>حفظ في السحابة</span>
+                <span>حفظ البيانات سحابياً</span>
             </button>
-
-            <div class="credits">
-                <span>إشراف : <b>مصطفى الشجاع</b></span>
-                <span>تطوير فني : <b>عمرو مسعد الشجاع</b></span>
-            </div>
         </form>
+
+        <div class="credits">
+            <span>إشراف : <b>مصطفى الشجاع</b></span> | 
+            <span>تطوير : <b>عمرو مسعد الشجاع</b></span>
+        </div>
     </div>
 
     <div class="history-card">
         <div class="history-title">
-            <span>السجلات السابقة</span>
-            <span id="recordCount" style="font-size: 14px; background: #e2e8f0; padding: 2px 10px; border-radius: 10px;">0 سجل</span>
+            <span>آخر السجلات</span>
+            <span id="recordCount" style="font-size: 13px; color: #64748b;">...</span>
         </div>
         <div id="expenseList" class="expense-list">
-            <p style="text-align: center; color: #94a3b8; padding: 20px;">جاري الاتصال بقاعدة البيانات...</p>
+            <p style="text-align: center; color: #94a3b8; padding: 15px; font-size: 14px;">جاري تحميل السجلات...</p>
         </div>
     </div>
 </div>
@@ -353,9 +321,8 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // إعدادات مشروعك magdi-50c75
     const firebaseConfig = {
       apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
       authDomain: "magdi-50c75.firebaseapp.com",
@@ -369,96 +336,86 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    
-    // يجب أن يطابق هذا الاسم تماماً ما تم وضعه في Rules (القواعد) في Firebase
     const appId = "magdi-expense-app";
 
-    let currentUser = null;
+    let user = null;
 
-    // تسجيل الدخول مجهول الهوية
-    const login = async () => {
+    // محاولة الاتصال
+    const initApp = async () => {
         try {
             await signInAnonymously(auth);
-        } catch (error) {
-            console.error("Auth Error:", error);
-            document.getElementById("statusText").innerText = "خطأ في الاتصال بالسحابة";
-            document.getElementById("statusIcon").style.background = "red";
+        } catch (e) {
+            console.error("Auth error", e);
+            document.getElementById("statusText").innerText = "خطأ في الهوية - فعل Anonymous Auth";
         }
     };
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            document.getElementById("statusText").innerText = "متصل بالسحابة وآمن";
-            document.getElementById("statusIcon").style.background = "#22c55e";
-            loadExpenses();
+    onAuthStateChanged(auth, (u) => {
+        user = u;
+        if(u) {
+            document.getElementById("statusIcon").classList.add("online");
+            document.getElementById("statusText").innerText = "متصل بمشروع magdi-50c75";
+            fetchData();
         }
     });
 
-    login();
+    initApp();
 
-    // استماع مباشر للبيانات
-    function loadExpenses() {
+    function fetchData() {
         const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
+        
         onSnapshot(expensesRef, (snapshot) => {
-            const listContainer = document.getElementById("expenseList");
-            const countBadge = document.getElementById("recordCount");
-            listContainer.innerHTML = "";
-            const docs = [];
+            const list = document.getElementById("expenseList");
+            const count = document.getElementById("recordCount");
+            list.innerHTML = "";
             
-            snapshot.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
+            const docs = [];
+            snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
+            
             docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            count.innerText = `${docs.length} سجل محفوظ`;
 
             if (docs.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">لا توجد سجلات مخزنة حالياً.</p>';
-                countBadge.innerText = "0 سجل";
+                list.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">لا توجد سجلات بعد.</p>';
                 return;
             }
 
-            countBadge.innerText = `${docs.length} سجل`;
-            docs.forEach(data => {
-                const item = document.createElement("div");
-                item.className = "expense-item";
-                let badgeClass = "badge-other";
-                if(data.caseType?.includes("مرض")) badgeClass = "badge-medical";
-                if(data.caseType?.includes("مالي")) badgeClass = "badge-financial";
-
-                item.innerHTML = `
+            docs.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "expense-item";
+                div.innerHTML = `
                     <div class="item-header">
-                        <span class="item-beneficiary">${data.beneficiaryName}</span>
-                        <span class="item-amount">${data.amount} ${data.currency}</span>
+                        <span class="item-beneficiary">${item.beneficiaryName}</span>
+                        <span class="item-amount">${item.amount} <small>${item.currency}</small></span>
                     </div>
-                    <div class="item-details">
-                        <span class="badge ${badgeClass}">${data.caseType}</span>
-                        <p style="margin-top:8px">${data.caseDetails || 'لا توجد تفاصيل إضافية'}</p>
-                    </div>
+                    <div class="badge">${item.caseType}</div>
+                    <div class="item-details">${item.caseDetails || 'لا توجد ملاحظات إضافية'}</div>
                     <div class="item-footer">
-                        <span>التاريخ: ${data.date}</span>
-                        <span>بواسطة: ${data.addedBy}</span>
+                        <span>📅 ${item.date}</span>
+                        <span>👤 مدخل: ${item.addedBy}</span>
                     </div>
                 `;
-                listContainer.appendChild(item);
+                list.appendChild(div);
             });
-        }, (error) => {
-            console.error("Firestore error:", error);
-            document.getElementById("expenseList").innerHTML = `<p style="text-align: center; color: red; padding: 20px;">حدث خطأ في جلب البيانات: تأكد من تفعيل Firestore والقواعد.</p>`;
+        }, (err) => {
+            console.error("Fetch error:", err);
+            document.getElementById("expenseList").innerHTML = `<p style="color:red; text-align:center">خطأ في جلب البيانات: تأكد من تفعيل Firestore.</p>`;
         });
     }
 
-    // إرسال البيانات
     const form = document.getElementById("expenseForm");
-    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loader = document.getElementById("loadingOverlay");
 
-    form.addEventListener("submit", async function(e){
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if (!currentUser) {
-            alert("يرجى الانتظار حتى يتم الاتصال بالسحابة...");
+        if(!user) {
+            alert("لا يوجد اتصال بالسحابة حالياً، يرجى إعادة تحميل الصفحة.");
             return;
         }
 
-        loadingOverlay.style.display = "flex";
-        
-        const data = {
+        loader.style.display = "flex";
+
+        const payload = {
             beneficiaryName: document.getElementById("beneficiaryName").value,
             caseType: document.getElementById("caseType").value,
             caseDetails: document.getElementById("caseDetails").value,
@@ -467,19 +424,33 @@
             date: document.getElementById("date").value,
             addedBy: document.getElementById("addedBy").value,
             createdAt: serverTimestamp(),
-            userId: currentUser.uid
+            uid: user.uid
         };
+
+        // تعيين مهلة زمنية للتوقف عن التحميل إذا لم يستجب Firestore
+        const timeout = setTimeout(() => {
+            loader.style.display = "none";
+            alert("استغرق الطلب وقتاً طويلاً. تأكد من إعداد قواعد الحماية (Rules) في Firebase وافتح الـ Console للتأكد من الخطأ.");
+        }, 10000);
 
         try {
             const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
-            await addDoc(expensesRef, data);
+            await addDoc(expensesRef, payload);
+            clearTimeout(timeout); // إلغاء المهلة عند النجاح
             form.reset();
             document.getElementById('date').valueAsDate = new Date();
-        } catch (error) {
-            console.error("Save error:", error);
-            alert("خطأ: تأكد من ضبط الـ Rules كما طلبنا منك سابقاً.");
-        } finally {
-            loadingOverlay.style.display = "none";
+            loader.style.display = "none";
+            alert("تم حفظ البيانات بنجاح!");
+        } catch (err) {
+            clearTimeout(timeout);
+            loader.style.display = "none";
+            console.error("Add error:", err);
+            
+            if (err.code === 'permission-denied') {
+                alert("خطأ: تم رفض الوصول. يرجى تحديث قواعد الحماية (Rules) في Firebase.");
+            } else {
+                alert("حدث خطأ: " + err.message);
+            }
         }
     });
 
