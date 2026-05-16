@@ -1,1082 +1,492 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>صندوق الحالات الطارئة - شامل الزكاة والمصروفات</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Firebase SDK (Version 9) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-    <!-- PDF Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>لوحة تسجيل المصروفات</title>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
-        
-        body { 
-            font-family: 'IBM Plex Sans Arabic', sans-serif;
-            background-color: #f1f5f9;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: pan-x pan-y;
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body{
+            background:#f0f2f5;
+            padding:20px;
+            color: #1e293b;
             overflow-x: hidden;
         }
 
-        .header-gradient {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            position: sticky;
-            top: 0;
-            z-index: 40;
+        .container{
+            max-width:900px;
+            margin:auto;
         }
 
-        .app-container {
-            max-width: 480px; 
-            margin: 0 auto;
-            min-height: 100vh;
-            background: #f8fafc;
-            position: relative;
+        .card{
+            background:#fff;
+            border-radius:18px;
+            padding:25px;
+            box-shadow:0 10px 25px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
         }
 
-        .currency-card-sar { border-top: 4px solid #10b981; background: #ecfdf5; }
-        .currency-card-usd { border-top: 4px solid #3b82f6; background: #eff6ff; }
-        .currency-card-yer { border-top: 4px solid #f59e0b; background: #fffbeb; }
-        .currency-card-zakat { border-top: 4px solid #8b5cf6; background: #f5f3ff; }
-        .currency-card-expense { border-top: 4px solid #ef4444; background: #fef2f2; }
-        .currency-card-balance { border-top: 4px solid #06b6d4; background: #ecfeff; }
-
-        .timeline-track {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
+        .header-section {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
         }
 
-        .timeline-fill {
-            height: 100%;
-            transition: width 0.5s ease-in-out;
+        .title{
+            color:#1e3a8a;
+            font-size:28px;
+            font-weight:bold;
+            margin-bottom: 5px;
         }
 
-        .filter-active {
-            background-color: #0f172a !important;
-            color: white !important;
-        }
-
-        .update-time-badge {
-            font-size: 9px;
-            color: #94a3b8;
+        .sync-info {
+            color: #64748b;
+            font-size: 14px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
+            gap: 6px;
         }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .sync-icon {
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:18px;
+        }
+
+        .full{
+            grid-column:1 / -1;
+        }
+
+        label{
+            display:block;
+            margin-bottom:8px;
+            color:#475569;
+            font-weight:600;
+            font-size:14px;
+        }
+
+        input, select, textarea{
+            width:100%;
+            padding:12px;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            outline:none;
+            font-size:16px; 
+            transition:0.3s;
+            background:#f8fafc;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        input:focus, select:focus, textarea:focus{
+            border-color:#2563eb;
+            background:#fff;
+            box-shadow:0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea{
+            resize:none;
+            min-height:100px;
+        }
+
+        .amount-box{
+            display:flex;
+            gap:10px;
+        }
+
+        .amount-box input{
+            flex:1;
+        }
+
+        .amount-box select{
+            width:140px;
+        }
+
+        .btn{
+            width:100%;
+            margin-top:20px;
+            border:none;
+            background:#2563eb;
+            color:white;
+            padding:16px;
+            border-radius:12px;
+            font-size:17px;
+            cursor:pointer;
+            font-weight:bold;
+            transition:0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn:hover:not(:disabled){
+            background:#1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn:active:not(:disabled){
+            transform: translateY(0);
+        }
+
+        .credits {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+            line-height: 1.8;
+        }
+
+        .credits span { display: block; }
+        .credits b { color: #1e3a8a; }
+
+        .history-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .expense-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            background: #ffffff;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .item-beneficiary { font-weight: bold; color: #1e293b; }
+        .item-amount { color: #059669; font-weight: 800; }
+        .item-details { font-size: 14px; color: #64748b; margin-bottom: 10px; }
         
-        .tab-active {
-            background-color: #0f172a;
-            color: white;
-            border-radius: 2rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-        .tab-inactive {
-            background-color: transparent;
-            color: #475569;
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 10px;
         }
 
-        .payment-option-active {
-            background-color: #0f172a !important;
-            color: white !important;
-            border-color: #0f172a !important;
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-medical { background: #fee2e2; color: #dc2626; }
+        .badge-financial { background: #dcfce7; color: #166534; }
+        .badge-other { background: #f1f5f9; color: #475569; }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media(max-width:700px){
+            .grid{ grid-template-columns:1fr; }
+            .amount-box{ flex-direction:column; }
+            .amount-box select{ width:100%; }
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
-            authDomain: "amr4admin.firebaseapp.com",
-            projectId: "amr4admin",
-            storageBucket: "amr4admin.firebasestorage.app",
-            messagingSenderId: "177280788092",
-            appId: "1:177280788092:web:44f16c8f585a5b3e484bf9"
-        };
+<div class="container">
+    <div class="card">
+        <div class="header-section">
+            <div class="title">لوحة تسجيل المصروفات</div>
+            <div class="sync-info">
+                <span class="sync-icon" id="statusIcon"></span>
+                <span id="statusText">تتم مزامنة البيانات مع لوحة التحكم الرئيسية</span>
+            </div>
+        </div>
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const APP_PATH = "amr4admin";
-
-        const App = () => {
-            const [allRecords, setAllRecords] = useState([]); 
-            const [expenses, setExpenses] = useState([]);
-            const [beneficiaries, setBeneficiaries] = useState([]);
-            const [user, setUser] = useState(null);
-            const [filter, setFilter] = useState('all'); 
-            const [isModalOpen, setIsModalOpen] = useState(false);
-            const [editId, setEditId] = useState(null);
-            const [isPdfLoading, setIsPdfLoading] = useState(false);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [geoInfo, setGeoInfo] = useState({ ip: '...', location: 'تحديد الموقع...' });
-            
-            const [activeTab, setActiveTab] = useState('emergency');
-            
-            const [zakatForm, setZakatForm] = useState({ 
-                name: '', 
-                amount: '', 
-                currency: 'yer', 
-                recordedBy: 'مصطفى الشجاع'
-            });
-            const [editZakatId, setEditZakatId] = useState(null);
-            const [isZakatModalOpen, setIsZakatModalOpen] = useState(false);
-
-            // Expenses state - تم اصلاح هيكل البيانات
-            const [expenseForm, setExpenseForm] = useState({
-                beneficiaryName: '',
-                caseType: 'علاج',
-                amount: '',
-                currency: 'yer',
-                expenseDate: new Date().toISOString().split('T')[0],
-                recordedBy: 'مصطفى الشجاع',
-                notes: ''
-            });
-            const [editExpenseId, setEditExpenseId] = useState(null);
-            const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-
-            // Beneficiary state - تم اصلاح هيكل البيانات
-            const [beneficiaryForm, setBeneficiaryForm] = useState({
-                name: '',
-                helpType: 'علاج',
-                amount: '',
-                currency: 'yer',
-                helpDate: new Date().toISOString().split('T')[0],
-                status: 'مكتمل',
-                notes: '',
-                recordedBy: 'مصطفى الشجاع'
-            });
-            const [editBeneficiaryId, setEditBeneficiaryId] = useState(null);
-            const [isBeneficiaryModalOpen, setIsBeneficiaryModalOpen] = useState(false);
-
-            // خيارات الدفع الجديدة لقسم الطوارئ
-            const [paymentOption, setPaymentOption] = useState('none');
-            const paymentOptions = [
-                { value: 'none', label: 'بدون أقساط', months: 0 },
-                { value: '3months', label: '3 أشهر', months: 3 },
-                { value: '6months', label: '6 أشهر', months: 6 },
-                { value: '1year', label: 'سنة كاملة', months: 12 }
-            ];
-
-            const fetchGeoData = async () => {
-                const providers = [
-                    { url: 'https://ipapi.co/json/', map: (d) => ({ ip: d.ip, location: d.country_name }) },
-                    { url: 'https://worldtimeapi.org/api/ip', map: (d) => ({ ip: d.client_ip, location: d.timezone.split('/')[0] }) },
-                    { url: 'https://ipinfo.io/json?token=7656641957242c', map: (d) => ({ ip: d.ip, location: d.country }) },
-                    { url: 'https://api.db-ip.com/v2/free/self', map: (d) => ({ ip: d.ipAddress, location: d.countryName }) }
-                ];
-
-                for (const provider of providers) {
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 2500);
-                        const response = await fetch(provider.url, { signal: controller.signal });
-                        clearTimeout(id);
-                        if (response.ok) {
-                            const data = await response.json();
-                            const mapped = provider.map(data);
-                            if (mapped.location && mapped.location !== 'undefined' && mapped.location !== 'Unknown') {
-                                setGeoInfo(mapped);
-                                return;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn("Provider failed, switching...");
-                    }
-                }
-
-                try {
-                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                    let inferredLocation = "منطقة " + tz.split('/')[0];
-                    if (tz.includes("Riyadh") || tz.includes("Asia/Aden")) inferredLocation = "السعودية/اليمن";
-                    setGeoInfo({ ip: 'متصل', location: inferredLocation });
-                } catch(e) {
-                    setGeoInfo({ ip: 'مجهول', location: 'خارج التغطية' });
-                }
-            };
-
-            useEffect(() => {
-                fetchGeoData();
-            }, []);
-
-            const [form, setForm] = useState({ 
-                name: '', 
-                recordedBy: 'مصطفى الشجاع',
-                totalAmount: '', 
-                paidAmount: '', 
-                currency: 'sar', 
-                duration: 'none', 
-                isPaidStatus: false 
-            });
-
-            useEffect(() => {
-                const unsub = auth.onAuthStateChanged((u) => {
-                    if (!u) auth.signInAnonymously();
-                    setUser(u);
-                });
-                return unsub;
-            }, []);
-
-            // Firestore listeners
-            useEffect(() => {
-                if (!user) return;
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                return ref.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setAllRecords(data);
-                }, err => console.error("Firestore Error:", err));
-            }, [user]);
-
-            useEffect(() => {
-                if (!user) return;
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('expenses');
-                return ref.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setExpenses(data);
-                }, err => console.error("Expenses Error:", err));
-            }, [user]);
-
-            useEffect(() => {
-                if (!user) return;
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('beneficiaries');
-                return ref.onSnapshot(snap => {
-                    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setBeneficiaries(data);
-                }, err => console.error("Beneficiaries Error:", err));
-            }, [user]);
-
-            const donors = useMemo(() => {
-                return allRecords.filter(record => !record.type || record.type !== 'zakat');
-            }, [allRecords]);
-
-            const zakatRecords = useMemo(() => {
-                return allRecords.filter(record => record.type === 'zakat');
-            }, [allRecords]);
-
-            const parseInfo = (d) => {
-                const note = d.note || "";
-                const total = parseFloat((note.match(/T:(\d+(\.\d+)?)/) || [0, 0])[1]);
-                const paid = parseFloat((note.match(/P:(\d+(\.\d+)?)/) || [0, 0])[1]);
-                const duration = (note.match(/D:([a-z0-9]+)/) || [0, 'none'])[1];
-                let curr = 'sar';
-                if (note.includes('C:USD')) curr = 'usd';
-                else if (note.includes('C:YER')) curr = 'yer';
-                
-                const progress = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-                let color = "bg-rose-500";
-                if (progress >= 100) color = "bg-emerald-500";
-                else if (progress > 50) color = "bg-blue-500";
-                else if (progress > 0) color = "bg-amber-500";
-
-                return { total, paid, remaining: Math.max(0, total - paid), curr, progress, color, duration };
-            };
-
-            const totals = useMemo(() => {
-                const sums = { sar: 0, usd: 0, yer: 0 };
-                donors.forEach(d => {
-                    const info = parseInfo(d);
-                    if (sums[info.curr] !== undefined) sums[info.curr] += info.paid;
-                });
-                return sums;
-            }, [donors]);
-
-            const zakatTotals = useMemo(() => {
-                const sums = { sar: 0, usd: 0, yer: 0 };
-                zakatRecords.forEach(record => {
-                    let curr = record.currency || 'yer';
-                    let amount = parseFloat(record.amount) || 0;
-                    if (sums[curr] !== undefined) sums[curr] += amount;
-                });
-                return sums;
-            }, [zakatRecords]);
-
-            const expenseTotals = useMemo(() => {
-                const sums = { sar: 0, usd: 0, yer: 0 };
-                expenses.forEach(exp => {
-                    let curr = exp.currency || 'yer';
-                    let amount = parseFloat(exp.amount) || 0;
-                    if (sums[curr] !== undefined) sums[curr] += amount;
-                });
-                return sums;
-            }, [expenses]);
-
-            // حساب الرصيد المتبقي (التبرعات + الزكاة - المصروفات)
-            const balance = useMemo(() => {
-                return {
-                    sar: (totals.sar + zakatTotals.sar) - expenseTotals.sar,
-                    usd: (totals.usd + zakatTotals.usd) - expenseTotals.usd,
-                    yer: (totals.yer + zakatTotals.yer) - expenseTotals.yer
-                };
-            }, [totals, zakatTotals, expenseTotals]);
-
-            const filteredEmergencyList = useMemo(() => {
-                let list = [...donors].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-                if (searchTerm) list = list.filter(d => d.name.includes(searchTerm));
-                return list.filter(d => {
-                    const info = parseInfo(d);
-                    if (filter === 'paid') return info.progress >= 100;
-                    if (filter === 'partial') return info.progress > 0 && info.progress < 100;
-                    if (filter === 'unpaid') return info.progress === 0;
-                    return true;
-                });
-            }, [donors, filter, searchTerm]);
-
-            const filteredZakatList = useMemo(() => {
-                let list = [...zakatRecords].sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
-                if (searchTerm) list = list.filter(z => z.name.includes(searchTerm));
-                return list;
-            }, [zakatRecords, searchTerm]);
-
-            const filteredExpensesList = useMemo(() => {
-                let list = [...expenses].sort((a, b) => (b.expenseDate || 0) - (a.expenseDate || 0));
-                if (searchTerm) list = list.filter(e => e.beneficiaryName && e.beneficiaryName.includes(searchTerm));
-                return list;
-            }, [expenses, searchTerm]);
-
-            const filteredBeneficiariesList = useMemo(() => {
-                let list = [...beneficiaries].sort((a, b) => (b.helpDate || 0) - (a.helpDate || 0));
-                if (searchTerm) list = list.filter(b => b.name && b.name.includes(searchTerm));
-                return list;
-            }, [beneficiaries, searchTerm]);
-
-            // اصلاح دالة حفظ بيانات الطوارئ
-            const handleSave = async (e) => {
-                e.preventDefault();
-                
-                // التحقق من صحة البيانات
-                if (!form.name || !form.totalAmount) {
-                    alert('الرجاء إدخال الاسم والمبلغ الكلي');
-                    return;
-                }
-
-                const now = Date.now();
-                const note = `T:${form.totalAmount}|P:${form.paidAmount || 0}|C:${form.currency.toUpperCase()}|D:${paymentOption}`;
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                
-                const data = { 
-                    name: form.name, 
-                    recordedBy: form.recordedBy,
-                    ip: geoInfo.ip,
-                    location: geoInfo.location,
-                    note: note, 
-                    updatedAt: now,
-                    paymentPlan: paymentOption,
-                    totalAmount: parseFloat(form.totalAmount),
-                    paidAmount: parseFloat(form.paidAmount) || 0
-                };
-
-                try {
-                    if (editId) {
-                        await ref.doc(editId).update(data);
-                        alert('تم تحديث البيانات بنجاح');
-                    } else {
-                        await ref.add({ ...data, createdAt: now });
-                        alert('تم إضافة المشترك بنجاح');
-                    }
-                    closeModal();
-                } catch (error) {
-                    console.error("Firestore Save Error:", error);
-                    alert('حدث خطأ في حفظ البيانات: ' + error.message);
-                }
-            };
-
-            // اصلاح دالة حفظ الزكاة
-            const handleSaveZakat = async (e) => {
-                e.preventDefault();
-                
-                if (!zakatForm.name || !zakatForm.amount) {
-                    alert('الرجاء إدخال الاسم والمبلغ');
-                    return;
-                }
-
-                const now = Date.now();
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                
-                const data = {
-                    name: zakatForm.name,
-                    amount: parseFloat(zakatForm.amount),
-                    currency: zakatForm.currency,
-                    recordedBy: zakatForm.recordedBy,
-                    ip: geoInfo.ip,
-                    location: geoInfo.location,
-                    updatedAt: now,
-                    type: 'zakat'
-                };
-                
-                try {
-                    if (editZakatId) {
-                        await ref.doc(editZakatId).update(data);
-                        alert('تم تحديث الزكاة بنجاح');
-                    } else {
-                        await ref.add({ ...data, createdAt: now });
-                        alert('تم إضافة الزكاة بنجاح');
-                    }
-                    closeZakatModal();
-                } catch (error) {
-                    console.error("Zakat Save Error:", error);
-                    alert('حدث خطأ في حفظ الزكاة: ' + error.message);
-                }
-            };
-
-            // اصلاح دالة حفظ المصروفات - الحل الجذري
-            const handleSaveExpense = async (e) => {
-                e.preventDefault();
-                
-                // التحقق من صحة البيانات
-                if (!expenseForm.beneficiaryName) {
-                    alert('الرجاء إدخال اسم المستفيد');
-                    return;
-                }
-                if (!expenseForm.amount || parseFloat(expenseForm.amount) <= 0) {
-                    alert('الرجاء إدخال مبلغ صحيح');
-                    return;
-                }
-
-                const now = Date.now();
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('expenses');
-                
-                // تحويل تاريخ الميلادي إلى timestamp
-                let expenseTimestamp = now;
-                if (expenseForm.expenseDate) {
-                    expenseTimestamp = new Date(expenseForm.expenseDate).getTime();
-                }
-                
-                const data = {
-                    beneficiaryName: expenseForm.beneficiaryName.trim(),
-                    caseType: expenseForm.caseType,
-                    amount: parseFloat(expenseForm.amount),
-                    currency: expenseForm.currency,
-                    expenseDate: expenseTimestamp,
-                    recordedBy: expenseForm.recordedBy,
-                    notes: expenseForm.notes || '',
-                    ip: geoInfo.ip,
-                    location: geoInfo.location,
-                    updatedAt: now
-                };
-                
-                try {
-                    if (editExpenseId) {
-                        await ref.doc(editExpenseId).update(data);
-                        alert('تم تحديث المصروف بنجاح');
-                    } else {
-                        await ref.add({ ...data, createdAt: now });
-                        alert('تم تسجيل المصروف بنجاح');
-                    }
-                    closeExpenseModal();
-                } catch (error) {
-                    console.error("Expense Save Error:", error);
-                    alert('حدث خطأ في حفظ المصروف: ' + error.message);
-                }
-            };
-
-            // اصلاح دالة حفظ المستفيدين - الحل الجذري
-            const handleSaveBeneficiary = async (e) => {
-                e.preventDefault();
-                
-                // التحقق من صحة البيانات
-                if (!beneficiaryForm.name) {
-                    alert('الرجاء إدخال اسم المستفيد');
-                    return;
-                }
-                if (!beneficiaryForm.amount || parseFloat(beneficiaryForm.amount) <= 0) {
-                    alert('الرجاء إدخال مبلغ صحيح');
-                    return;
-                }
-
-                const now = Date.now();
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('beneficiaries');
-                
-                // تحويل تاريخ الميلادي إلى timestamp
-                let helpTimestamp = now;
-                if (beneficiaryForm.helpDate) {
-                    helpTimestamp = new Date(beneficiaryForm.helpDate).getTime();
-                }
-                
-                const data = {
-                    name: beneficiaryForm.name.trim(),
-                    helpType: beneficiaryForm.helpType,
-                    amount: parseFloat(beneficiaryForm.amount),
-                    currency: beneficiaryForm.currency,
-                    helpDate: helpTimestamp,
-                    status: beneficiaryForm.status,
-                    notes: beneficiaryForm.notes || '',
-                    recordedBy: beneficiaryForm.recordedBy,
-                    ip: geoInfo.ip,
-                    location: geoInfo.location,
-                    updatedAt: now
-                };
-                
-                try {
-                    if (editBeneficiaryId) {
-                        await ref.doc(editBeneficiaryId).update(data);
-                        alert('تم تحديث بيانات المستفيد بنجاح');
-                    } else {
-                        await ref.add({ ...data, createdAt: now });
-                        alert('تم إضافة المستفيد بنجاح');
-                    }
-                    closeBeneficiaryModal();
-                } catch (error) {
-                    console.error("Beneficiary Save Error:", error);
-                    alert('حدث خطأ في حفظ المستفيد: ' + error.message);
-                }
-            };
-            
-            const deleteZakatRecord = async (id) => {
-                if (confirm("هل تريد حذف سجل الزكاة نهائياً؟")) {
-                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                    await ref.doc(id).delete();
-                    alert('تم الحذف بنجاح');
-                }
-            };
-            
-            const deleteEmergencyRecord = async (id) => {
-                if (confirm("هل تريد حذف هذا السجل نهائياً؟")) {
-                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                    await ref.doc(id).delete();
-                    alert('تم الحذف بنجاح');
-                }
-            };
-
-            const deleteExpenseRecord = async (id) => {
-                if (confirm("هل تريد حذف هذا المصروف نهائياً؟")) {
-                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('expenses');
-                    await ref.doc(id).delete();
-                    alert('تم الحذف بنجاح');
-                }
-            };
-
-            const deleteBeneficiaryRecord = async (id) => {
-                if (confirm("هل تريد حذف سجل المستفيد نهائياً؟")) {
-                    const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('beneficiaries');
-                    await ref.doc(id).delete();
-                    alert('تم الحذف بنجاح');
-                }
-            };
-
-            const closeModal = () => {
-                setIsModalOpen(false);
-                setEditId(null);
-                setForm({ name: '', recordedBy: 'مصطفى الشجاع', totalAmount: '', paidAmount: '', currency: 'sar', duration: 'none', isPaidStatus: false });
-                setPaymentOption('none');
-            };
-
-            const closeZakatModal = () => {
-                setIsZakatModalOpen(false);
-                setEditZakatId(null);
-                setZakatForm({ name: '', amount: '', currency: 'yer', recordedBy: 'مصطفى الشجاع' });
-            };
-
-            const closeExpenseModal = () => {
-                setIsExpenseModalOpen(false);
-                setEditExpenseId(null);
-                setExpenseForm({ 
-                    beneficiaryName: '', 
-                    caseType: 'علاج', 
-                    amount: '', 
-                    currency: 'yer', 
-                    expenseDate: new Date().toISOString().split('T')[0], 
-                    recordedBy: 'مصطفى الشجاع', 
-                    notes: '' 
-                });
-            };
-
-            const closeBeneficiaryModal = () => {
-                setIsBeneficiaryModalOpen(false);
-                setEditBeneficiaryId(null);
-                setBeneficiaryForm({ 
-                    name: '', 
-                    helpType: 'علاج', 
-                    amount: '', 
-                    currency: 'yer', 
-                    helpDate: new Date().toISOString().split('T')[0], 
-                    status: 'مكتمل', 
-                    notes: '', 
-                    recordedBy: 'مصطفى الشجاع' 
-                });
-            };
-
-            const formatUpdateDate = (ts) => {
-                if (!ts) return "غير متوفر";
-                return new Date(ts).toLocaleDateString('ar-YE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            };
-
-            const getPaymentPlanLabel = (plan) => {
-                const option = paymentOptions.find(opt => opt.value === plan);
-                return option ? option.label : 'بدون أقساط';
-            };
-
-            const generatePDF = async () => {
-                if (isPdfLoading) return;
-                setIsPdfLoading(true);
-                try {
-                    const pdfElement = document.createElement('div');
-                    pdfElement.style.position = 'fixed';
-                    pdfElement.style.left = '-9999px';
-                    pdfElement.style.top = '0';
-                    pdfElement.style.width = '800px';
-                    pdfElement.style.background = 'white';
-                    pdfElement.style.direction = 'rtl';
-                    pdfElement.style.padding = '40px';
-                    pdfElement.style.fontFamily = 'IBM Plex Sans Arabic, sans-serif';
-                    
-                    let rowsHtml = '';
-                    donors.forEach((d, index) => {
-                        const info = parseInfo(d);
-                        rowsHtml += `
-                            <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-                                <td style="padding: 12px; border: 1px solid #e2e8f0; vertical-align: top;">
-                                    <div style="font-weight: bold; color: #1e293b; font-size: 14px;">${d.name}</div>
-                                    <div style="font-size: 10px; color: #64748b; margin-top: 2px;">الموقع: ${d.location || '---'}</div>
-                                    <div style="font-size: 9px; color: #94a3b8; margin-top: 2px;">تحديث: ${formatUpdateDate(d.updatedAt)}</div>
-                                    <div style="font-size: 9px; color: #8b5cf6; margin-top: 2px;">خطة السداد: ${getPaymentPlanLabel(d.paymentPlan)}</div>
-                                </td>
-                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${info.total.toLocaleString()}</td>
-                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">
-                                    <div style="font-weight: bold; color: #059669;">${info.paid.toLocaleString()} <span style="font-size: 10px; color: #475569;">(${info.curr.toUpperCase()})</span></div>
-                                    <div style="background: #e2e8f0; border-radius: 10px; height: 6px; width: 100%; margin-top: 6px; overflow: hidden;">
-                                        <div style="background: ${info.progress >= 100 ? '#10b981' : info.progress > 50 ? '#3b82f6' : info.progress > 0 ? '#f59e0b' : '#ef4444'}; width: ${info.progress}%; height: 100%;"></div>
-                                    </div>
-                                    <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">نسبة الإنجاز: ${Math.round(info.progress)}%</div>
-                                </td>
-                                <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; color: #475569; font-size: 12px;">${d.recordedBy || '-'}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    pdfElement.innerHTML = `
-                        <div style="direction: rtl; padding: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f172a; padding-bottom: 25px; margin-bottom: 35px;">
-                                <div>
-                                    <h1 style="font-size: 32px; font-weight: bold; margin: 0; color: #0f172a;">تقرير صندوق الحالات الطارئة</h1>
-                                    <p style="font-size: 18px; color: #10b981; font-weight: 700; margin: 8px 0 0;">قرية محبران - محافظة إب</p>
-                                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">إشراف: مصطفى الشجاع | تطوير: عمرو مسعد الشجاع</p>
-                                </div>
-                                <div style="text-align: left;">
-                                    <div style="background: #f1f5f9; padding: 10px 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
-                                        <p style="font-size: 14px; margin: 0; color: #1e293b; font-weight: bold;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-YE')}</p>
-                                        <p style="font-size: 14px; margin: 5px 0 0; color: #10b981; font-weight: bold;">إجمالي المشتركين: ${donors.length}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <h3 style="font-size: 18px; margin: 20px 0 10px;">سجل المصروفات</h3>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 13px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 30px;">
-                                <thead>
-                                    <tr style="background: #0f172a; color: white;">
-                                        <th style="padding: 15px; text-align: right;">اسم المستفيد</th>
-                                        <th style="padding: 15px; text-align: center;">نوع المصروف</th>
-                                        <th style="padding: 15px; text-align: center;">المبلغ</th>
-                                        <th style="padding: 15px; text-align: center;">التاريخ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${expenses.map((exp, idx) => `
-                                        <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${exp.beneficiaryName}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${exp.caseType}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${exp.amount.toLocaleString()} ${exp.currency === 'sar' ? 'ر.س' : exp.currency === 'usd' ? '$' : 'ي.ي'}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${new Date(exp.expenseDate).toLocaleDateString('ar-YE')}</td>
-                                         </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                            <h3 style="font-size: 18px; margin: 20px 0 10px;">سجل المستفيدين</h3>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 13px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
-                                <thead>
-                                    <tr style="background: #0f172a; color: white;">
-                                        <th style="padding: 15px; text-align: right;">اسم المستفيد</th>
-                                        <th style="padding: 15px; text-align: center;">نوع المساعدة</th>
-                                        <th style="padding: 15px; text-align: center;">المبلغ</th>
-                                        <th style="padding: 15px; text-align: center;">الحالة</th>
-                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${beneficiaries.map((ben, idx) => `
-                                        <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0;">${ben.name}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.helpType}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.amount.toLocaleString()} ${ben.currency === 'sar' ? 'ر.س' : ben.currency === 'usd' ? '$' : 'ي.ي'}</td>
-                                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${ben.status}</td>
-                                         </table>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(pdfElement);
-                    const canvas = await html2canvas(pdfElement, { scale: 2, backgroundColor: "#ffffff", logging: false });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-                    const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
-                    pdf.save(`تقرير_صندوق_محبران_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.pdf`);
-                    document.body.removeChild(pdfElement);
-                } catch(e) { console.error(e); } finally { setIsPdfLoading(false); }
-            };
-
-            return (
-                <div className="app-container shadow-2xl">
-                    <header className="header-gradient text-white pt-6 pb-6 px-6 rounded-b-[2.5rem] shadow-xl">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-base font-bold text-white">صندوق الحالات الطارئة</h1>
-                                <p className="text-[11px] text-emerald-400 font-medium">قرية محبران</p>
-                            </div>
-                            <div className="flex flex-col items-end">
-                                <button onClick={generatePDF} disabled={isPdfLoading} className={`${isPdfLoading ? 'bg-slate-600 animate-pulse' : 'bg-emerald-500'} px-4 py-2 rounded-xl text-[10px] font-bold mb-3 flex items-center gap-2 transition-all shadow-lg active:scale-95`}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3"/></svg>
-                                    {isPdfLoading ? 'جاري التحميل...' : 'تحميل التقرير PDF'}
-                                </button>
-                                <div className="text-[9px] opacity-70 text-left text-white/80 leading-relaxed">
-                                    <p>إشراف: مصطفى الشجاع</p>
-                                    <p>تطوير : عمرو مسعد الشجاع</p>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main className="px-5 mt-8 pb-32">
-                        <div className="mb-6">
-                            <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex -space-x-1">
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse relative z-10"></span>
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500/30 animate-ping absolute"></span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">موقعك الحالي:</span>
-                                    <span className="text-[11px] font-black text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{geoInfo.location}</span>
-                                </div>
-                                <div className="text-[9px] font-mono text-slate-300">{geoInfo.ip}</div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 mb-6">
-                            <div className="currency-card-sar p-3 rounded-2xl text-center shadow-sm">
-                                <p className="text-[8px] font-bold text-emerald-700 uppercase mb-1">تبرعات</p>
-                                <p className="text-xs font-black text-emerald-900">{totals.sar.toLocaleString()} ر.س</p>
-                                <p className="text-[9px]">{totals.usd.toLocaleString()} $</p>
-                                <p className="text-[9px]">{totals.yer.toLocaleString()} ي.ي</p>
-                            </div>
-                            <div className="currency-card-zakat p-3 rounded-2xl text-center shadow-sm">
-                                <p className="text-[8px] font-bold text-purple-700 uppercase mb-1">الزكاة</p>
-                                <p className="text-xs font-black text-purple-900">{zakatTotals.sar.toLocaleString()} ر.س</p>
-                                <p className="text-[9px]">{zakatTotals.usd.toLocaleString()} $</p>
-                                <p className="text-[9px]">{zakatTotals.yer.toLocaleString()} ي.ي</p>
-                            </div>
-                            <div className="currency-card-expense p-3 rounded-2xl text-center shadow-sm">
-                                <p className="text-[8px] font-bold text-rose-700 uppercase mb-1">المصروفات</p>
-                                <p className="text-xs font-black text-rose-900">{expenseTotals.sar.toLocaleString()} ر.س</p>
-                                <p className="text-[9px]">{expenseTotals.usd.toLocaleString()} $</p>
-                                <p className="text-[9px]">{expenseTotals.yer.toLocaleString()} ي.ي</p>
-                            </div>
-                            <div className="currency-card-balance p-3 rounded-2xl text-center shadow-sm">
-                                <p className="text-[8px] font-bold text-cyan-700 uppercase mb-1">الرصيد المتبقي</p>
-                                <p className="text-xs font-black text-cyan-900">{balance.sar.toLocaleString()} ر.س</p>
-                                <p className="text-[9px]">{balance.usd.toLocaleString()} $</p>
-                                <p className="text-[9px]">{balance.yer.toLocaleString()} ي.ي</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-1 bg-white p-2 rounded-3xl shadow-sm mb-8 overflow-x-auto no-scrollbar">
-                            <button onClick={() => setActiveTab('emergency')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 whitespace-nowrap px-3 ${activeTab === 'emergency' ? 'tab-active' : 'tab-inactive'}`}>حالات الطوارئ</button>
-                            <button onClick={() => setActiveTab('zakat')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 whitespace-nowrap px-3 ${activeTab === 'zakat' ? 'tab-active' : 'tab-inactive'}`}>مال الزكاة</button>
-                            <button onClick={() => setActiveTab('expenses')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 whitespace-nowrap px-3 ${activeTab === 'expenses' ? 'tab-active' : 'tab-inactive'}`}>المصروفات</button>
-                            <button onClick={() => setActiveTab('beneficiaries')} className={`flex-1 py-3 text-sm font-bold transition-all duration-200 whitespace-nowrap px-3 ${activeTab === 'beneficiaries' ? 'tab-active' : 'tab-inactive'}`}>المستفيدون</button>
-                        </div>
-
-                        <div className="space-y-4 mb-8">
-                            <input className="w-full bg-white p-4 pr-12 rounded-2xl text-sm font-bold shadow-sm outline-none ring-slate-100 focus:ring-2 transition-all" placeholder="ابحث باسم..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
-                            {activeTab === 'emergency' && (
-                                <div className="flex bg-white p-1.5 rounded-2xl gap-1 shadow-sm border overflow-x-auto no-scrollbar">
-                                    {['all', 'paid', 'partial', 'unpaid'].map(id => (
-                                        <button key={id} onClick={() => setFilter(id)} className={`flex-1 py-2.5 px-2 rounded-xl text-[10px] font-bold transition-all ${filter === id ? 'filter-active' : 'text-slate-400'}`}>
-                                            {id === 'all' ? 'الكل' : id === 'paid' ? 'المكتمل' : id === 'partial' ? 'جزئي' : 'الانتظار'}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="space-y-5">
-                            {activeTab === 'emergency' && filteredEmergencyList.map(d => {
-                                const info = parseInfo(d);
-                                return (
-                                    <div key={d.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative group active:scale-[0.98] transition-transform">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-bold text-slate-800 text-base">{d.name}</h3>
-                                                    <span className="text-[7px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase font-bold">{d.location || 'غير معروف'}</span>
-                                                </div>
-                                                
-                                                <div className="flex flex-col gap-0.5 mb-2">
-                                                    <div className="text-[10px] font-bold text-emerald-600">قسم الحالات الطارئة</div>
-                                                    <div className="text-[10px] font-medium text-rose-500">المتبقي: {info.remaining.toLocaleString()} {info.curr.toUpperCase()}</div>
-                                                    {d.paymentPlan && d.paymentPlan !== 'none' && (
-                                                        <div className="text-[9px] font-bold text-purple-600">خطة السداد: {getPaymentPlanLabel(d.paymentPlan)}</div>
-                                                    )}
-                                                </div>
-
-                                                <div className="update-time-badge mb-2">تحديث: {formatUpdateDate(d.updatedAt)}</div>
-                                                <div className="text-[8px] text-slate-500 bg-slate-50 px-2 py-1 rounded-lg inline-flex items-center gap-1.5 border border-slate-100 flex-wrap">
-                                                    <span className="font-bold text-slate-700">بواسطة: {d.recordedBy || '---'}</span>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span className="font-mono">{d.ip || '---'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-left"><div className="text-lg font-black text-slate-900">{info.paid.toLocaleString()}</div><div className="text-[10px] font-bold text-slate-300 uppercase">{info.curr}</div></div>
-                                        </div>
-                                        <div className="timeline-track"><div className={`timeline-fill ${info.color}`} style={{width:`${info.progress}%`}}></div></div>
-                                        <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] flex items-center justify-center gap-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
-                                            <button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: d.recordedBy || 'مصطفى الشجاع', totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: info.duration, isPaidStatus: info.progress >= 100 }); setPaymentOption(d.paymentPlan || 'none'); setIsModalOpen(true); }} className="p-3 px-6 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">تعديل</button>
-                                            <button onClick={() => deleteEmergencyRecord(d.id)} className="p-3 px-6 bg-rose-600 text-white rounded-2xl font-bold shadow-lg">حذف</button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            
-                            {activeTab === 'zakat' && filteredZakatList.map(z => (
-                                <div key={z.id} className="bg-white p-6 rounded-[2.5rem] border border-purple-100 shadow-sm relative group">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 text-lg">{z.name}</h3>
-                                            <div className="text-[10px] font-bold text-purple-600 mt-0.5 mb-1">قسم مال الزكاة</div>
-                                            <p className="text-[9px] text-purple-500">مسجل بواسطة: {z.recordedBy}</p>
-                                            <p className="text-[9px] text-slate-400">{formatUpdateDate(z.updatedAt || z.createdAt)}</p>
-                                        </div>
-                                        <div className="text-left"><div className="text-xl font-black text-purple-800">{parseFloat(z.amount).toLocaleString()} <span className="text-xs uppercase">{z.currency === 'sar' ? 'ر.س' : z.currency === 'usd' ? '$' : 'ي.ي'}</span></div></div>
-                                    </div>
-                                    <div className="flex gap-3 mt-4">
-                                        <button onClick={() => { setEditZakatId(z.id); setZakatForm({ name: z.name, amount: z.amount, currency: z.currency, recordedBy: z.recordedBy }); setIsZakatModalOpen(true); }} className="flex-1 py-2 bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold">تعديل</button>
-                                        <button onClick={() => deleteZakatRecord(z.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {activeTab === 'expenses' && filteredExpensesList.map(exp => (
-                                <div key={exp.id} className="bg-white p-6 rounded-[2.5rem] border border-rose-100 shadow-sm relative group">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 text-lg">{exp.beneficiaryName}</h3>
-                                            <div className="text-[10px] font-bold text-rose-600 mt-0.5 mb-1">نوع المصروف: {exp.caseType}</div>
-                                            {exp.notes && <p className="text-[9px] text-slate-500">ملاحظات: {exp.notes}</p>}
-                                            <p className="text-[9px] text-slate-400">مسجل بواسطة: {exp.recordedBy}</p>
-                                            <p className="text-[9px] text-slate-400">التاريخ: {formatUpdateDate(exp.expenseDate)}</p>
-                                        </div>
-                                        <div className="text-left"><div className="text-xl font-black text-rose-700">{parseFloat(exp.amount).toLocaleString()} <span className="text-xs uppercase">{exp.currency === 'sar' ? 'ر.س' : exp.currency === 'usd' ? '$' : 'ي.ي'}</span></div></div>
-                                    </div>
-                                    <div className="flex gap-3 mt-4">
-                                        <button onClick={() => { setEditExpenseId(exp.id); setExpenseForm({ beneficiaryName: exp.beneficiaryName, caseType: exp.caseType, amount: exp.amount, currency: exp.currency, expenseDate: new Date(exp.expenseDate).toISOString().split('T')[0], recordedBy: exp.recordedBy, notes: exp.notes || '' }); setIsExpenseModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
-                                        <button onClick={() => deleteExpenseRecord(exp.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {activeTab === 'beneficiaries' && filteredBeneficiariesList.map(ben => (
-                                <div key={ben.id} className="bg-white p-6 rounded-[2.5rem] border border-cyan-100 shadow-sm relative group">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 text-lg">{ben.name}</h3>
-                                            <div className="text-[10px] font-bold text-cyan-600 mt-0.5 mb-1">نوع المساعدة: {ben.helpType}</div>
-                                            <div className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold mt-1 mb-1 ${ben.status === 'مكتمل' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>الحالة: {ben.status}</div>
-                                            {ben.notes && <p className="text-[9px] text-slate-500 mt-1">ملاحظات: {ben.notes}</p>}
-                                            <p className="text-[9px] text-slate-400">مسجل بواسطة: {ben.recordedBy}</p>
-                                            <p className="text-[9px] text-slate-400">التاريخ: {formatUpdateDate(ben.helpDate)}</p>
-                                        </div>
-                                        <div className="text-left"><div className="text-xl font-black text-cyan-700">{parseFloat(ben.amount).toLocaleString()} <span className="text-xs uppercase">{ben.currency === 'sar' ? 'ر.س' : ben.currency === 'usd' ? '$' : 'ي.ي'}</span></div></div>
-                                    </div>
-                                    <div className="flex gap-3 mt-4">
-                                        <button onClick={() => { setEditBeneficiaryId(ben.id); setBeneficiaryForm({ name: ben.name, helpType: ben.helpType, amount: ben.amount, currency: ben.currency, helpDate: new Date(ben.helpDate).toISOString().split('T')[0], status: ben.status, notes: ben.notes || '', recordedBy: ben.recordedBy }); setIsBeneficiaryModalOpen(true); }} className="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold">تعديل</button>
-                                        <button onClick={() => deleteBeneficiaryRecord(ben.id)} className="flex-1 py-2 bg-rose-100 text-rose-800 rounded-xl text-xs font-bold">حذف</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </main>
-
-                    <div className="fixed bottom-0 left-0 right-0 p-6 z-40 bg-gradient-to-t from-slate-100 via-slate-100/90 to-transparent pointer-events-none">
-                        <div className="max-w-[480px] mx-auto pointer-events-auto">
-                            <button onClick={() => {
-                                if (activeTab === 'emergency') setIsModalOpen(true);
-                                else if (activeTab === 'zakat') setIsZakatModalOpen(true);
-                                else if (activeTab === 'expenses') setIsExpenseModalOpen(true);
-                                else if (activeTab === 'beneficiaries') setIsBeneficiaryModalOpen(true);
-                            }} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-bold shadow-2xl active:scale-95 transition-all">
-                                {activeTab === 'emergency' && 'إضافة مشترك جديد'}
-                                {activeTab === 'zakat' && 'إضافة مال زكاة جديد'}
-                                {activeTab === 'expenses' && 'تسجيل صرف جديد'}
-                                {activeTab === 'beneficiaries' && 'إضافة حالة مستفيد'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Emergency Modal with Payment Options */}
-                    {isModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeModal}>
-                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black">{editId ? 'تعديل' : 'إضافة مشترك'}</h2><button onClick={closeModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
-                                <form onSubmit={handleSave} className="space-y-6">
-                                    <input required placeholder="الاسم الكامل" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
-                                    <select className="w-full bg-slate-100 p-4 rounded-2xl" value={form.recordedBy} onChange={e=>setForm({...form, recordedBy:e.target.value})}>
-                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
-                                    </select>
-                                    
-                                    {/* خيارات الدفع الجديدة */}
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-bold text-slate-700">خطة الدفع / التقسيط</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {paymentOptions.map(option => (
-                                                <button
-                                                    key={option.value}
-                                                    type="button"
-                                                    onClick={() => setPaymentOption(option.value)}
-                                                    className={`px-4 py-3 rounded-xl text-sm font-bold transition-all border-2 ${
-                                                        paymentOption === option.value 
-                                                            ? 'payment-option-active border-slate-900 bg-slate-900 text-white' 
-                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-                                                    }`}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input type="number" required placeholder="المبلغ الكلي" className="bg-slate-50 p-5 rounded-2xl" value={form.totalAmount} onChange={e=>setForm({...form, totalAmount:e.target.value})} />
-                                        <select className="bg-slate-50 p-5 rounded-2xl" value={form.currency} onChange={e=>setForm({...form, currency:e.target.value})}>
-                                            <option value="sar">ريال سعودي</option><option value="usd">دولار أمريكي</option><option value="yer">ريال يمني</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div className="flex gap-2">
-                                        <button type="button" onClick={() => { setForm({...form, isPaidStatus: true, paidAmount: form.totalAmount}); }} className={`flex-1 py-4 rounded-2xl transition-all ${form.isPaidStatus ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>دفع كامل</button>
-                                        <button type="button" onClick={() => { setForm({...form, isPaidStatus: false}); }} className={`flex-1 py-4 rounded-2xl transition-all ${!form.isPaidStatus ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'}`}>دفع جزئي</button>
-                                    </div>
-                                    
-                                    {!form.isPaidStatus && (
-                                        <input type="number" placeholder="المبلغ المدفوع" className="w-full border-2 border-slate-200 p-5 rounded-2xl" value={form.paidAmount} onChange={e=>setForm({...form, paidAmount:e.target.value})} />
-                                    )}
-                                    
-                                    <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg">{editId ? 'تحديث' : 'تأكيد الإضافة'}</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Zakat Modal */}
-                    {isZakatModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeZakatModal}>
-                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeZakatModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-purple-500" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-purple-800">{editZakatId ? 'تعديل مال زكاة' : 'إضافة مال زكاة'}</h2><button onClick={closeZakatModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
-                                <form onSubmit={handleSaveZakat} className="space-y-6">
-                                    <input required placeholder="اسم المتبرع / الجهة" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={zakatForm.name} onChange={e=>setZakatForm({...zakatForm, name:e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.amount} onChange={e=>setZakatForm({...zakatForm, amount:e.target.value})} />
-                                        <select className="bg-slate-50 p-5 rounded-2xl" value={zakatForm.currency} onChange={e=>setZakatForm({...zakatForm, currency:e.target.value})}>
-                                            <option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option>
-                                        </select>
-                                    </div>
-                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={zakatForm.recordedBy} onChange={e=>setZakatForm({...zakatForm, recordedBy:e.target.value})}>
-                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
-                                    </select>
-                                    <button type="submit" className="w-full bg-purple-700 text-white py-5 rounded-2xl font-bold text-lg">{editZakatId ? 'تحديث الزكاة' : 'إضافة الزكاة'}</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Expense Modal - Fixed */}
-                    {isExpenseModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeExpenseModal}>
-                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeExpenseModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-rose-500" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-rose-800">{editExpenseId ? 'تعديل صرف' : 'تسجيل صرف جديد'}</h2><button onClick={closeExpenseModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
-                                <form onSubmit={handleSaveExpense} className="space-y-6">
-                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={expenseForm.beneficiaryName} onChange={e=>setExpenseForm({...expenseForm, beneficiaryName:e.target.value})} />
-                                    <select className="w-full bg-slate-50 p-5 rounded-2xl" value={expenseForm.caseType} onChange={e=>setExpenseForm({...expenseForm, caseType:e.target.value})}>
-                                        <option>علاج</option><option>إيجار</option><option>غذاء</option><option>كسوة</option><option>تعليم</option><option>أخرى</option>
-                                    </select>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={expenseForm.amount} onChange={e=>setExpenseForm({...expenseForm, amount:e.target.value})} />
-                                        <select className="bg-slate-50 p-5 rounded-2xl" value={expenseForm.currency} onChange={e=>setExpenseForm({...expenseForm, currency:e.target.value})}>
-                                            <option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option>
-                                        </select>
-                                    </div>
-                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={expenseForm.expenseDate} onChange={e=>setExpenseForm({...expenseForm, expenseDate: e.target.value})} />
-                                    <textarea placeholder="ملاحظات إضافية" className="w-full bg-slate-50 p-5 rounded-2xl" rows="3" value={expenseForm.notes} onChange={e=>setExpenseForm({...expenseForm, notes:e.target.value})} />
-                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={expenseForm.recordedBy} onChange={e=>setExpenseForm({...expenseForm, recordedBy:e.target.value})}>
-                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
-                                    </select>
-                                    <button type="submit" className="w-full bg-rose-600 text-white py-5 rounded-2xl font-bold text-lg">{editExpenseId ? 'تحديث الصرف' : 'تسجيل الصرف'}</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Beneficiary Modal - Fixed */}
-                    {isBeneficiaryModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4" onClick={closeBeneficiaryModal}>
-                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={closeBeneficiaryModal}></div>
-                            <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 overflow-y-auto max-h-[90vh] shadow-2xl border-t-4 border-cyan-500" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-cyan-800">{editBeneficiaryId ? 'تعديل مستفيد' : 'إضافة حالة مستفيد'}</h2><button onClick={closeBeneficiaryModal} className="p-3 bg-slate-100 rounded-full text-xl font-bold">×</button></div>
-                                <form onSubmit={handleSaveBeneficiary} className="space-y-6">
-                                    <input required placeholder="اسم المستفيد" className="w-full bg-slate-50 p-5 rounded-2xl text-right" value={beneficiaryForm.name} onChange={e=>setBeneficiaryForm({...beneficiaryForm, name:e.target.value})} />
-                                    <select className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.helpType} onChange={e=>setBeneficiaryForm({...beneficiaryForm, helpType:e.target.value})}>
-                                        <option>علاج</option><option>إيجار</option><option>غذاء</option><option>كسوة</option><option>تعليم</option><option>أخرى</option>
-                                    </select>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input required type="number" placeholder="المبلغ" className="bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.amount} onChange={e=>setBeneficiaryForm({...beneficiaryForm, amount:e.target.value})} />
-                                        <select className="bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.currency} onChange={e=>setBeneficiaryForm({...beneficiaryForm, currency:e.target.value})}>
-                                            <option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option>
-                                        </select>
-                                    </div>
-                                    <select className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.status} onChange={e=>setBeneficiaryForm({...beneficiaryForm, status:e.target.value})}>
-                                        <option>مكتمل</option><option>قيد التنفيذ</option><option>قيد الانتظار</option>
-                                    </select>
-                                    <input type="date" className="w-full bg-slate-50 p-5 rounded-2xl" value={beneficiaryForm.helpDate} onChange={e=>setBeneficiaryForm({...beneficiaryForm, helpDate: e.target.value})} />
-                                    <textarea placeholder="ملاحظات إضافية" className="w-full bg-slate-50 p-5 rounded-2xl" rows="3" value={beneficiaryForm.notes} onChange={e=>setBeneficiaryForm({...beneficiaryForm, notes:e.target.value})} />
-                                    <select className="w-full bg-slate-100 p-5 rounded-2xl" value={beneficiaryForm.recordedBy} onChange={e=>setBeneficiaryForm({...beneficiaryForm, recordedBy:e.target.value})}>
-                                        <option>مصطفى الشجاع</option><option>ياسر الشجاع</option><option>عمرو الشجاع</option>
-                                    </select>
-                                    <button type="submit" className="w-full bg-cyan-600 text-white py-5 rounded-2xl font-bold text-lg">{editBeneficiaryId ? 'تحديث المستفيد' : 'إضافة المستفيد'}</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
+        <form id="expenseForm">
+            <div class="grid">
+                <div>
+                    <label>اسم المستفيد</label>
+                    <input type="text" id="beneficiaryName" placeholder="اكتب اسم المستفيد" required>
                 </div>
-            );
+
+                <div>
+                    <label>نوع الحالة</label>
+                    <select id="caseType" required>
+                        <option value="">اختر نوع الحالة</option>
+                        <option value="حالة مرضية">حالة مرضية</option>
+                        <option value="حالة وفاة">حالة وفاة</option>
+                        <option value="مساعدة مالية">مساعدة مالية</option>
+                        <option value="حادث">حادث</option>
+                        <option value="حالة إنسانية">حالة إنسانية</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                </div>
+
+                <div class="full">
+                    <label>تفاصيل الحالة</label>
+                    <textarea id="caseDetails" placeholder="اكتب تفاصيل الحالة بشكل كامل..." spellcheck="false"></textarea>
+                </div>
+
+                <div>
+                    <label>المبلغ المنفق</label>
+                    <div class="amount-box">
+                        <input type="number" id="amount" placeholder="المبلغ" required>
+                        <select id="currency">
+                            <option value="ريال يمني">ريال يمني</option>
+                            <option value="ريال سعودي">ريال سعودي</option>
+                            <option value="دولار">دولار</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label>تاريخ التوثيق</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="full">
+                    <label>تم الإدخال بواسطة <span style="color:red">*</span></label>
+                    <input type="text" id="addedBy" placeholder="اسم مدخل البيانات" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                <span>حفظ في السحابة</span>
+            </button>
+
+            <div class="credits">
+                <span>إشراف : <b>مصطفى الشجاع</b></span>
+                <span>تطوير فني : <b>عمرو مسعد الشجاع</b></span>
+            </div>
+        </form>
+    </div>
+
+    <div class="history-card">
+        <div class="history-title">
+            <span>السجلات السابقة</span>
+            <span id="recordCount" style="font-size: 14px; background: #e2e8f0; padding: 2px 10px; border-radius: 10px;">0 سجل</span>
+        </div>
+        <div id="expenseList" class="expense-list">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">جاري الاتصال بقاعدة البيانات...</p>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // إعدادات مشروعك magdi-50c75
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
+      authDomain: "magdi-50c75.firebaseapp.com",
+      projectId: "magdi-50c75",
+      storageBucket: "magdi-50c75.firebasestorage.app",
+      messagingSenderId: "329518389376",
+      appId: "1:329518389376:web:f2f73f4a257dcb84efee65",
+      measurementId: "G-E3TK0NJ1PJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    // يجب أن يطابق هذا الاسم تماماً ما تم وضعه في Rules (القواعد) في Firebase
+    const appId = "magdi-expense-app";
+
+    let currentUser = null;
+
+    // تسجيل الدخول مجهول الهوية
+    const login = async () => {
+        try {
+            await signInAnonymously(auth);
+        } catch (error) {
+            console.error("Auth Error:", error);
+            document.getElementById("statusText").innerText = "خطأ في الاتصال بالسحابة";
+            document.getElementById("statusIcon").style.background = "red";
+        }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById("statusText").innerText = "متصل بالسحابة وآمن";
+            document.getElementById("statusIcon").style.background = "#22c55e";
+            loadExpenses();
+        }
+    });
+
+    login();
+
+    // استماع مباشر للبيانات
+    function loadExpenses() {
+        const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
+        onSnapshot(expensesRef, (snapshot) => {
+            const listContainer = document.getElementById("expenseList");
+            const countBadge = document.getElementById("recordCount");
+            listContainer.innerHTML = "";
+            const docs = [];
+            
+            snapshot.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
+            docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+            if (docs.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">لا توجد سجلات مخزنة حالياً.</p>';
+                countBadge.innerText = "0 سجل";
+                return;
+            }
+
+            countBadge.innerText = `${docs.length} سجل`;
+            docs.forEach(data => {
+                const item = document.createElement("div");
+                item.className = "expense-item";
+                let badgeClass = "badge-other";
+                if(data.caseType?.includes("مرض")) badgeClass = "badge-medical";
+                if(data.caseType?.includes("مالي")) badgeClass = "badge-financial";
+
+                item.innerHTML = `
+                    <div class="item-header">
+                        <span class="item-beneficiary">${data.beneficiaryName}</span>
+                        <span class="item-amount">${data.amount} ${data.currency}</span>
+                    </div>
+                    <div class="item-details">
+                        <span class="badge ${badgeClass}">${data.caseType}</span>
+                        <p style="margin-top:8px">${data.caseDetails || 'لا توجد تفاصيل إضافية'}</p>
+                    </div>
+                    <div class="item-footer">
+                        <span>التاريخ: ${data.date}</span>
+                        <span>بواسطة: ${data.addedBy}</span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }, (error) => {
+            console.error("Firestore error:", error);
+            document.getElementById("expenseList").innerHTML = `<p style="text-align: center; color: red; padding: 20px;">حدث خطأ في جلب البيانات: تأكد من تفعيل Firestore والقواعد.</p>`;
+        });
+    }
+
+    // إرسال البيانات
+    const form = document.getElementById("expenseForm");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+
+    form.addEventListener("submit", async function(e){
+        e.preventDefault();
+        if (!currentUser) {
+            alert("يرجى الانتظار حتى يتم الاتصال بالسحابة...");
+            return;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        loadingOverlay.style.display = "flex";
+        
+        const data = {
+            beneficiaryName: document.getElementById("beneficiaryName").value,
+            caseType: document.getElementById("caseType").value,
+            caseDetails: document.getElementById("caseDetails").value,
+            amount: document.getElementById("amount").value,
+            currency: document.getElementById("currency").value,
+            date: document.getElementById("date").value,
+            addedBy: document.getElementById("addedBy").value,
+            createdAt: serverTimestamp(),
+            userId: currentUser.uid
+        };
+
+        try {
+            const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
+            await addDoc(expensesRef, data);
+            form.reset();
+            document.getElementById('date').valueAsDate = new Date();
+        } catch (error) {
+            console.error("Save error:", error);
+            alert("خطأ: تأكد من ضبط الـ Rules كما طلبنا منك سابقاً.");
+        } finally {
+            loadingOverlay.style.display = "none";
+        }
+    });
+
+    window.onload = () => {
+        document.getElementById('date').valueAsDate = new Date();
+    };
+</script>
 </body>
 </html>
+
