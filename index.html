@@ -2,435 +2,503 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>لوحة تسجيل المصروفات - Realtime Mode</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تقديم طلب مساعدة - نظام الصرف</title>
+    
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            -webkit-text-size-adjust: 100%;
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+        body { 
+            font-family: 'IBM Plex Sans Arabic', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
         }
-
-        body{
-            background:#f8fafc;
-            padding:15px;
-            color: #1e293b;
-            overflow-x: hidden;
-        }
-
-        .container{
-            max-width:800px;
-            margin:auto;
-        }
-
-        .card{
-            background:#fff;
-            border-radius:20px;
-            padding:25px;
-            box-shadow:0 15px 35px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border: 1px solid #f1f5f9;
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f1f5f9;
-        }
-
-        .title{
-            color:#1e3a8a;
-            font-size:26px;
-            font-weight:800;
-            margin-bottom: 8px;
-        }
-
-        .sync-info {
-            color: #64748b;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .sync-icon {
-            width: 10px;
-            height: 10px;
-            background: #cbd5e1;
-            border-radius: 50%;
-            transition: 0.3s;
-        }
-
-        .online { background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
-
-        .grid{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:15px;
-        }
-
-        .full{ grid-column: 1 / -1; }
-
-        label{
-            display:block;
-            margin-bottom:6px;
-            color:#475569;
-            font-weight:600;
-            font-size:13px;
-        }
-
-        input, select, textarea{
-            width:100%;
-            padding:14px;
-            border:1.5px solid #e2e8f0;
-            border-radius:12px;
-            outline:none;
-            font-size:16px; 
-            transition:0.2s;
-            background:#ffffff;
-            appearance: none;
-            -webkit-appearance: none;
-        }
-
-        input:focus, select:focus, textarea:focus{
-            border-color:#2563eb;
-            box-shadow:0 0 0 4px rgba(37, 99, 235, 0.08);
-        }
-
-        textarea{
-            min-height:90px;
-            resize: none;
-        }
-
-        .amount-box{
-            display:flex;
-            gap:8px;
-        }
-
-        .amount-box input { flex: 1; }
-        .amount-box select { width: 120px; }
-
-        .btn{
-            width:100%;
-            margin-top:20px;
-            border:none;
-            background:#2563eb;
-            color:white;
-            padding:16px;
-            border-radius:15px;
-            font-size:18px;
-            cursor:pointer;
-            font-weight:bold;
-            transition:0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn:active{ transform: scale(0.98); }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-
-        .history-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-        }
-
-        .history-title {
-            font-size: 19px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #1e3a8a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .expense-list { display: flex; flex-direction: column; gap: 12px; }
-
-        .expense-item {
-            border: 1px solid #f1f5f9;
-            border-radius: 15px;
-            padding: 15px;
-            background: #ffffff;
-            transition: 0.2s;
-        }
-
-        .item-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .item-beneficiary { font-weight: 700; color: #0f172a; }
-        .item-amount { color: #16a34a; font-weight: 800; font-size: 1.1rem; }
-        .item-details { font-size: 14px; color: #64748b; margin: 8px 0; line-height: 1.5; }
-        
-        .item-footer {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #94a3b8;
-            border-top: 1px solid #f8fafc;
-            padding-top: 8px;
-            margin-top: 5px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: bold;
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .spinner {
-            width: 45px;
-            height: 45px;
-            border: 4px solid #f1f5f9;
-            border-top: 4px solid #2563eb;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        @media(max-width:600px){
-            .grid { grid-template-columns: 1fr; }
-        }
-
-        .credits {
-            margin-top: 25px;
-            text-align: center;
-            font-size: 13px;
-            color: #94a3b8;
-            border-top: 1px solid #f1f5f9;
-            padding-top: 15px;
-        }
-        .credits b { color: #334155; }
+        .btn-press:active { transform: scale(0.97); }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .status-pending { background: #fef3c7; border-right: 4px solid #f59e0b; }
+        .status-approved { background: #d1fae5; border-right: 4px solid #10b981; }
+        .status-rejected { background: #fee2e2; border-right: 4px solid #ef4444; }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <p style="margin-top: 15px; color: #1e3a8a; font-weight: bold;">جاري معالجة الطلب...</p>
-</div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-<div class="container">
-    <div class="card">
-        <div class="header-section">
-            <div class="title">لوحة تسجيل المصروفات</div>
-            <div class="sync-info">
-                <span class="sync-icon" id="statusIcon"></span>
-                <span id="statusText">جاري الاتصال بـ Realtime DB...</span>
-            </div>
-        </div>
-
-        <form id="expenseForm">
-            <div class="grid">
-                <div>
-                    <label>اسم المستفيد</label>
-                    <input type="text" id="beneficiaryName" placeholder="أدخل الاسم الرباعي" required>
-                </div>
-
-                <div>
-                    <label>نوع الحالة</label>
-                    <select id="caseType" required>
-                        <option value="">-- اختر النوع --</option>
-                        <option value="حالة مرضية">حالة مرضية</option>
-                        <option value="مساعدة مالية">مساعدة مالية</option>
-                        <option value="حالة وفاة">حالة وفاة</option>
-                        <option value="حادث">حادث</option>
-                        <option value="حالة إنسانية">حالة إنسانية</option>
-                        <option value="أخرى">أخرى</option>
-                    </select>
-                </div>
-
-                <div class="full">
-                    <label>التفاصيل والملاحظات</label>
-                    <textarea id="caseDetails" placeholder="اكتب شرحاً مختصراً للحالة..."></textarea>
-                </div>
-
-                <div>
-                    <label>المبلغ</label>
-                    <div class="amount-box">
-                        <input type="number" id="amount" placeholder="0.00" required>
-                        <select id="currency">
-                            <option value="ريال يمني">ريال يمني</option>
-                            <option value="ريال سعودي">ريال سعودي</option>
-                            <option value="دولار">دولار</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label>تاريخ الصرف</label>
-                    <input type="date" id="date" required>
-                </div>
-
-                <div class="full">
-                    <label>مدخل البيانات</label>
-                    <input type="text" id="addedBy" placeholder="اسمك الكامل" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn" id="submitBtn">
-                <span>حفظ البيانات سحابياً</span>
-            </button>
-        </form>
-
-        <div class="credits">
-            <span>إشراف : <b>مصطفى الشجاع</b></span> | 
-            <span>تطوير : <b>عمرو مسعد الشجاع</b></span>
-        </div>
-    </div>
-
-    <div class="history-card">
-        <div class="history-title">
-            <span>آخر السجلات</span>
-            <span id="recordCount" style="font-size: 13px; color: #64748b;">...</span>
-        </div>
-        <div id="expenseList" class="expense-list">
-            <p style="text-align: center; color: #94a3b8; padding: 15px; font-size: 14px;">جاري تحميل السجلات...</p>
-        </div>
-    </div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-
-    // إعدادات مشروع magdi-50c75
-    const firebaseConfig = {
-      apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
-      authDomain: "magdi-50c75.firebaseapp.com",
-      databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com", // رابط Realtime Database
-      projectId: "magdi-50c75",
-      storageBucket: "magdi-50c75.firebasestorage.app",
-      messagingSenderId: "329518389376",
-      appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const dbPath = "expenses"; // المسار الذي سيتم الحفظ فيه
-
-    // تحديث الحالة عند الاتصال
-    const connectedRef = ref(db, ".info/connected");
-    onValue(connectedRef, (snap) => {
-        const statusIcon = document.getElementById("statusIcon");
-        const statusText = document.getElementById("statusText");
-        if (snap.val() === true) {
-            statusIcon.classList.add("online");
-            statusText.innerText = "متصل بـ Realtime Database";
-        } else {
-            statusIcon.classList.remove("online");
-            statusText.innerText = "فصل الاتصال.. جاري المحاولة";
-        }
-    });
-
-    // جلب البيانات لحظياً
-    function fetchData() {
-        const expensesRef = ref(db, dbPath);
-        onValue(expensesRef, (snapshot) => {
-            const list = document.getElementById("expenseList");
-            const count = document.getElementById("recordCount");
-            list.innerHTML = "";
-            
-            const data = snapshot.val();
-            if (!data) {
-                list.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">لا توجد سجلات بعد.</p>';
-                count.innerText = "0 سجل محفوظ";
-                return;
-            }
-
-            const docs = Object.keys(data).map(key => ({id: key, ...data[key]}));
-            
-            // ترتيب الأحدث أولاً
-            docs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            count.innerText = `${docs.length} سجل محفوظ`;
-
-            docs.forEach(item => {
-                const div = document.createElement("div");
-                div.className = "expense-item";
-                div.innerHTML = `
-                    <div class="item-header">
-                        <span class="item-beneficiary">${item.beneficiaryName}</span>
-                        <span class="item-amount">${item.amount} <small>${item.currency}</small></span>
-                    </div>
-                    <div class="badge">${item.caseType}</div>
-                    <div class="item-details">${item.caseDetails || 'لا توجد ملاحظات إضافية'}</div>
-                    <div class="item-footer">
-                        <span>📅 ${item.date}</span>
-                        <span>👤 مدخل: ${item.addedBy}</span>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-        });
-    }
-
-    fetchData();
-
-    // إرسال البيانات
-    const form = document.getElementById("expenseForm");
-    const loader = document.getElementById("loadingOverlay");
-
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        loader.style.display = "flex";
-
-        const payload = {
-            beneficiaryName: document.getElementById("beneficiaryName").value,
-            caseType: document.getElementById("caseType").value,
-            caseDetails: document.getElementById("caseDetails").value,
-            amount: document.getElementById("amount").value,
-            currency: document.getElementById("currency").value,
-            date: document.getElementById("date").value,
-            addedBy: document.getElementById("addedBy").value,
-            timestamp: serverTimestamp() // وقت السيرفر للترتيب
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
+            authDomain: "magdi-50c75.firebaseapp.com",
+            databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com",
+            projectId: "magdi-50c75",
+            storageBucket: "magdi-50c75.firebasestorage.app",
+            messagingSenderId: "329518389376",
+            appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
         };
 
-        try {
-            const newListRef = push(ref(db, dbPath));
-            await set(newListRef, payload);
-            form.reset();
-            document.getElementById('date').valueAsDate = new Date();
-            alert("تم الحفظ بنجاح!");
-        } catch (err) {
-            console.error(err);
-            alert("فشل الحفظ: تأكد أنك في قسم Realtime Database وليس Firestore.");
-        } finally {
-            loader.style.display = "none";
-        }
-    });
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
 
-    window.onload = () => {
-        document.getElementById('date').valueAsDate = new Date();
-    };
-</script>
+        // Types of cases
+        const caseTypes = [
+            { value: 'accident', label: '🚗 حادث', icon: '🚗' },
+            { value: 'disease', label: '🏥 مرض', icon: '🏥' },
+            { value: 'treatment', label: '💊 علاج', icon: '💊' },
+            { value: 'travelTreatment', label: '✈️ سفر للعلاج', icon: '✈️' },
+            { value: 'marriage', label: '💑 زواج', icon: '💑' },
+            { value: 'zakatCharity', label: '🕌 صدقة من مال الزكاة', icon: '🕌' },
+            { value: 'financialAid', label: '💰 مساعدة مالية', icon: '💰' },
+            { value: 'other', label: '📌 أخرى', icon: '📌' }
+        ];
+
+        const App = () => {
+            const [view, setView] = useState('form'); // 'form' or 'track'
+            const [submittedRequest, setSubmittedRequest] = useState(null);
+            const [trackingId, setTrackingId] = useState('');
+            const [trackedRequest, setTrackedRequest] = useState(null);
+            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
+            
+            // Custom notification modal state
+            const [notification, setNotification] = useState(null);
+
+            const showNotification = (message, type = 'success') => {
+                setNotification({ message, type });
+            };
+
+            // Get location
+            useEffect(() => {
+                fetch('https://ipapi.co/json/')
+                    .then(res => res.json())
+                    .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
+                    .catch(() => setGeoInfo({ location: 'اليمن' }));
+            }, []);
+
+            // Anonymous auth
+            useEffect(() => {
+                auth.signInAnonymously().catch(console.error);
+            }, []);
+
+            return (
+                <div className="min-h-screen py-8 px-4">
+                    <div className="max-w-2xl mx-auto">
+                        
+                        {/* Custom Notification Toast */}
+                        {notification && (
+                            <div className="fixed top-4 left-4 right-4 z-50 flex justify-center pointer-events-none fade-in">
+                                <div className={`px-6 py-4 rounded-2xl shadow-2xl text-white font-bold flex items-center gap-3 max-w-md pointer-events-auto ${
+                                    notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'
+                                }`}>
+                                    <span>{notification.type === 'error' ? '⚠️' : '✨'}</span>
+                                    <span>{notification.message}</span>
+                                    <button 
+                                        onClick={() => setNotification(null)}
+                                        className="mr-auto text-white/80 hover:text-white font-normal"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-block p-4 bg-white/20 backdrop-blur rounded-full mb-4">
+                                <span className="text-5xl">📝</span>
+                            </div>
+                            <h1 className="text-3xl font-bold text-white">تقديم طلب مساعدة</h1>
+                            <p className="text-white/80 mt-2">نظام الصرف المتكامل - صندوق الحالات الطارئة</p>
+                        </div>
+
+                        {/* Toggle Buttons */}
+                        <div className="flex gap-3 mb-6">
+                            <button 
+                                onClick={() => { setView('form'); setSubmittedRequest(null); }}
+                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
+                            >
+                                📝 تقديم طلب جديد
+                            </button>
+                            <button 
+                                onClick={() => { setView('track'); setTrackedRequest(null); }}
+                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
+                            >
+                                🔍 متابعة طلب
+                            </button>
+                        </div>
+
+                        {/* Request Form */}
+                        {view === 'form' && !submittedRequest && (
+                            <RequestForm 
+                                onSubmit={(requestId) => setSubmittedRequest({ id: requestId, status: 'pending' })} 
+                                geoInfo={geoInfo} 
+                                caseTypes={caseTypes} 
+                                showNotification={showNotification}
+                            />
+                        )}
+                        
+                        {/* Submission Result */}
+                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} />}
+                        
+                        {/* Track Request */}
+                        {view === 'track' && (
+                            <TrackRequest 
+                                trackingId={trackingId} 
+                                setTrackingId={setTrackingId} 
+                                trackedRequest={trackedRequest} 
+                                setTrackedRequest={setTrackedRequest} 
+                                showNotification={showNotification}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Request Form Component
+        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification }) => {
+            const [formData, setFormData] = useState({
+                caseName: '',
+                caseDetails: '',
+                caseType: '',
+                requesterName: '',
+                requestDate: new Date().toISOString().split('T')[0],
+                urgencyLevel: 'urgent',
+                incomeReport: '',
+                requestAmount: '',
+                preferredCurrency: 'yer'
+            });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                
+                try {
+                    const newRequestRef = database.ref('assistanceRequests').push();
+                    const requestId = newRequestRef.key;
+                    
+                    await newRequestRef.set({
+                        ...formData,
+                        requestId: requestId,
+                        location: geoInfo.location,
+                        status: 'pending',
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    showNotification('تم إرسال طلبك بنجاح!');
+                    onSubmit(requestId);
+                } catch (error) {
+                    console.error(error);
+                    showNotification('حدث خطأ في إرسال الطلب، يرجى المحاولة لاحقاً', 'error');
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم الحالة *</label>
+                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.caseName} onChange={(e) => setFormData({...formData, caseName: e.target.value})}
+                                    placeholder="مثال: حالة عائلة أحمد" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم مقدم الحالة *</label>
+                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requesterName} onChange={(e) => setFormData({...formData, requesterName: e.target.value})}
+                                    placeholder="الاسم الكامل" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">نوع الحالة *</label>
+                            <select required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.caseType} onChange={(e) => setFormData({...formData, caseType: e.target.value})}>
+                                <option value="">اختر نوع الحالة</option>
+                                {caseTypes.map(type => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">تفاصيل شاملة عن الحالة *</label>
+                            <textarea required rows="5" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.caseDetails} onChange={(e) => setFormData({...formData, caseDetails: e.target.value})}
+                                placeholder="اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..."></textarea>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">تقرير شامل عن مستوى دخل الحالة *</label>
+                            <textarea required rows="4" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.incomeReport} onChange={(e) => setFormData({...formData, incomeReport: e.target.value})}
+                                placeholder="صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..."></textarea>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ المطلوب</label>
+                                <input type="number" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requestAmount} onChange={(e) => setFormData({...formData, requestAmount: e.target.value})}
+                                    placeholder="المبلغ" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">العملة</label>
+                                <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.preferredCurrency} onChange={(e) => setFormData({...formData, preferredCurrency: e.target.value})}>
+                                    <option value="yer">🇾🇪 ريال يمني</option>
+                                    <option value="sar">🇸🇦 ريال سعودي</option>
+                                    <option value="usd">🇺🇸 دولار</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">التاريخ *</label>
+                                <input type="date" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requestDate} onChange={(e) => setFormData({...formData, requestDate: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">مستوى تقديم الطلب *</label>
+                                <div className="flex gap-4 pt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" value="urgent" checked={formData.urgencyLevel === 'urgent'} 
+                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
+                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">🚨 مستعجل</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" value="notUrgent" checked={formData.urgencyLevel === 'notUrgent'} 
+                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">✅ غير مستعجل</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-500">
+                            📍 موقع التقديم الحالي: {geoInfo.location}
+                        </div>
+
+                        <button type="submit" disabled={isSubmitting} 
+                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg transition-all hover:shadow-xl btn-press disabled:opacity-50">
+                            {isSubmitting ? 'جاري الإرسال...' : '📤 إرسال الطلب'}
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        // Submission Result Component
+        const SubmissionResult = ({ request, onNewRequest }) => {
+            const [currentStatus, setCurrentStatus] = useState(request.status);
+            
+            useEffect(() => {
+                const statusRef = database.ref(`assistanceRequests/${request.id}/status`);
+                const unsubscribe = statusRef.on('value', (snapshot) => {
+                    const status = snapshot.val();
+                    if (status) setCurrentStatus(status);
+                });
+                return () => statusRef.off();
+            }, [request.id]);
+
+            const getStatusContent = () => {
+                switch(currentStatus) {
+                    case 'pending':
+                        return {
+                            icon: '⏳',
+                            title: 'قيد المراجعة',
+                            color: 'text-yellow-600',
+                            bg: 'bg-yellow-100',
+                            message: 'تم استلام طلبك بنجاح، وهو قيد المراجعة من قبل الفريق المسؤول'
+                        };
+                    case 'approved':
+                        return {
+                            icon: '✅',
+                            title: 'تمت الموافقة على الطلب',
+                            color: 'text-green-600',
+                            bg: 'bg-green-100',
+                            message: 'تمت الموافقة على طلبك، سيتم التواصل معك قريباً'
+                        };
+                    case 'rejected':
+                        return {
+                            icon: '❌',
+                            title: 'تم رفض الطلب',
+                            color: 'text-red-600',
+                            bg: 'bg-red-100',
+                            message: 'نأسف لرفض طلبك، يمكنك التواصل مع الإدارة لمعرفة الأسباب'
+                        };
+                    default:
+                        return {
+                            icon: '⏳',
+                            title: 'قيد المراجعة',
+                            color: 'text-yellow-600',
+                            bg: 'bg-yellow-100',
+                            message: 'جاري مراجعة طلبك'
+                        };
+                }
+            };
+
+            const statusContent = getStatusContent();
+
+            return (
+                <div className="bg-white rounded-3xl shadow-2xl p-8 text-center fade-in">
+                    <div className={`inline-block p-4 ${statusContent.bg} rounded-full mb-6`}>
+                        <span className="text-6xl">{statusContent.icon}</span>
+                    </div>
+                    
+                    <h2 className={`text-2xl font-bold ${statusContent.color} mb-4`}>{statusContent.title}</h2>
+                    
+                    <p className="text-gray-600 mb-6">{statusContent.message}</p>
+                    
+                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                        <p className="text-sm text-gray-500 mb-2">رقم الطلب المرجعي:</p>
+                        <p className="text-lg font-mono font-bold text-purple-600 selection:bg-purple-200">{request.id}</p>
+                        <p className="text-xs text-gray-400 mt-3">⚠️ احتفظ بهذا الرقم لمتابعة طلبك</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button onClick={onNewRequest} 
+                            className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold btn-press">
+                            تقديم طلب جديد
+                        </button>
+                        <button onClick={() => window.location.reload()} 
+                            className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold btn-press">
+                            الصفحة الرئيسية
+                        </button>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t">
+                        <p className="text-xs text-gray-400">
+                            سيتم تحديث حالة الطلب تلقائياً عند المراجعة
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // Track Request Component
+        const TrackRequest = ({ trackingId, setTrackingId, trackedRequest, setTrackedRequest, showNotification }) => {
+            const [isLoading, setIsLoading] = useState(false);
+
+            const checkStatus = async () => {
+                if (!trackingId.trim()) {
+                    showNotification('الرجاء إدخال رقم الطلب أولاً', 'error');
+                    return;
+                }
+                setIsLoading(true);
+                
+                const requestRef = database.ref(`assistanceRequests/${trackingId.trim()}`);
+                requestRef.once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setTrackedRequest({ id: trackingId.trim(), ...data });
+                        showNotification('تم العثور على الطلب بنجاح!');
+                    } else {
+                        showNotification('لم يتم العثور على الرقم المرجعي للطلب', 'error');
+                        setTrackedRequest(null);
+                    }
+                    setIsLoading(false);
+                });
+            };
+
+            const getStatusDisplay = (status) => {
+                switch(status) {
+                    case 'pending': return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
+                    case 'approved': return { text: '✅ تمت الموافقة', bg: 'status-approved' };
+                    case 'rejected': return { text: '❌ تم الرفض', bg: 'status-rejected' };
+                    default: return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
+                }
+            };
+
+            const getCaseTypeLabel = (typeValue) => {
+                const types = {
+                    'accident': '🚗 حادث', 'disease': '🏥 مرض', 'treatment': '💊 علاج',
+                    'travelTreatment': '✈️ سفر للعلاج', 'marriage': '💑 زواج',
+                    'zakatCharity': '🕌 صدقة زكاة', 'financialAid': '💰 مساعدة مالية', 'other': '📌 أخرى'
+                };
+                return types[typeValue] || typeValue;
+            };
+
+            return (
+                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
+                    <h3 className="text-lg font-bold mb-4 text-center text-gray-800">🔍 متابعة طلب مساعدة</h3>
+                    
+                    <div className="flex gap-3 mb-6">
+                        <input type="text" 
+                            placeholder="أدخل رقم الطلب" 
+                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-left"
+                            dir="ltr"
+                            value={trackingId} 
+                            onChange={(e) => setTrackingId(e.target.value)} />
+                        <button onClick={checkStatus} disabled={isLoading}
+                            className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[80px]">
+                            {isLoading ? 'جاري...' : 'بحث'}
+                        </button>
+                    </div>
+
+                    {trackedRequest && (
+                        <div className={`rounded-2xl p-5 ${getStatusDisplay(trackedRequest.status).bg} fade-in text-gray-800`}>
+                            <div className="flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3">
+                                <div>
+                                    <h4 className="font-bold text-lg">{trackedRequest.caseName}</h4>
+                                    <p className="text-sm text-gray-600 mt-1">👤 مقدم الطلب: {trackedRequest.requesterName}</p>
+                                </div>
+                                <div className="text-2xl">{getStatusDisplay(trackedRequest.status).text.split(' ')[0]}</div>
+                            </div>
+                            
+                            <div className="space-y-3 text-sm">
+                                <p><span className="font-bold">🏷️ نوع الحالة:</span> {getCaseTypeLabel(trackedRequest.caseType)}</p>
+                                <p><span className="font-bold">📅 تاريخ التقديم:</span> {trackedRequest.requestDate}</p>
+                                {trackedRequest.requestAmount && (
+                                    <p><span className="font-bold">💰 المبلغ المطلوب:</span> {parseFloat(trackedRequest.requestAmount).toLocaleString()} 
+                                        {trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي'}</p>
+                                )}
+                                <p><span className="font-bold">⚡ مستوى الاستعجال:</span> 
+                                    {trackedRequest.urgencyLevel === 'urgent' ? ' 🚨 مستعجل' : ' ✅ غير مستعجل'}</p>
+                                <div className="bg-white/40 p-3 rounded-xl mt-2">
+                                    <span className="font-bold block mb-1 text-xs text-gray-500">📝 ملخص الحالة:</span>
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trackedRequest.caseDetails}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-black/10 text-center">
+                                <p className="text-sm font-bold">
+                                    حالة الطلب الحالية: {getStatusDisplay(trackedRequest.status).text}
+                                </p>
+                                {trackedRequest.reviewedAt && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        تمت المراجعة بتاريخ: {new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA')}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-6 text-center text-xs text-gray-400">
+                        <p>📌 سيتم تحديث هذه الصفحة فور مراجعة طلبك</p>
+                        <p className="mt-1">يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
-```
+
