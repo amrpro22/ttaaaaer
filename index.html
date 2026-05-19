@@ -209,7 +209,7 @@
                     reject(new Error(errorMessage || "انتهت مهلة الاستجابة من الخادم. يرجى التحقق من اتصالك بالإنترنت."));
                 }, ms);
 
-                promise.then(
+                Promise.resolve(promise).then(
                     (res) => {
                         clearTimeout(timer);
                         resolve(res);
@@ -255,26 +255,38 @@
                         console.warn("Auth initialization failed or skipped:", authError);
                     });
 
-                // 2. Fetch data with built-in UI safety timeout
+                // 2. Load Offline/Local Storage Requests first
+                const localRequests = JSON.parse(localStorage.getItem('offline_requests') || '[]');
+
+                // 3. Fetch data from cloud with a safety timeout fallback
                 const loadingTimeout = setTimeout(() => {
+                    setRequests(localRequests);
                     setLoading(false);
-                }, 8000);
+                }, 5000);
 
                 const requestsRef = db.ref('requests');
                 requestsRef.on('value', (snapshot) => {
                     clearTimeout(loadingTimeout);
                     const data = snapshot.val();
-                    const loadedRequests = [];
+                    const loadedRequests = [...localRequests];
+                    
                     if (data) {
                         for (let id in data) {
-                            loadedRequests.push({ id, ...data[id] });
+                            // Avoid duplicates
+                            if (!localRequests.some(local => local.nationalId === data[id].nationalId && local.createdAt === data[id].createdAt)) {
+                                loadedRequests.push({ id, ...data[id] });
+                            }
                         }
                     }
-                    setRequests(loadedRequests.reverse());
+                    
+                    // Sort all requests by newest first
+                    loadedRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    setRequests(loadedRequests);
                     setLoading(false);
                 }, (error) => {
                     clearTimeout(loadingTimeout);
                     console.error("Error fetching data: ", error);
+                    setRequests(localRequests);
                     setLoading(false);
                 });
 
@@ -290,10 +302,17 @@
                 setFormData(prev => ({ ...prev, [name]: value }));
             };
 
-            // Handle File Change
+            // Handle File Change with strict size limit (2MB) to prevent Base64 hangs
             const handleFileChange = (e) => {
                 if (e.target.files[0]) {
-                    setAttachment(e.target.files[0]);
+                    const file = e.target.files[0];
+                    if (file.size > 2 * 1024 * 1024) { // 2MB Limit
+                        showToast("حجم الملف المرفق كبير جداً (الأقصى 2 ميجابايت). يرجى اختيار ملف أصغر لضمان سرعة الإرسال دون تعليق.", "error");
+                        e.target.value = '';
+                        setAttachment(null);
+                        return;
+                    }
+                    setAttachment(file);
                 }
             };
 
@@ -319,6 +338,31 @@
                 });
             };
 
+            // Robust and professional file upload wrapper (Resolves native hang of Firebase upload Tasks)
+            const uploadFile = (file) => {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const storageRef = storage.ref(`attachments/${Date.now()}_${file.name}`);
+                        const uploadTask = storageRef.put(file);
+                        
+                        uploadTask.on('state_changed', 
+                            null, // Progress callback skipped for speed
+                            (error) => {
+                                console.error("Firebase Storage Upload task error:", error);
+                                reject(error);
+                            }, 
+                            () => {
+                                uploadTask.snapshot.ref.getDownloadURL()
+                                    .then((downloadURL) => resolve(downloadURL))
+                                    .catch((err) => reject(err));
+                            }
+                        );
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            };
+
             // Submit Request Handler (Fully Robust and Protected from Hanging)
             const handleSubmit = async (e) => {
                 e.preventDefault();
@@ -335,26 +379,20 @@
                     let fileUrl = "";
                     let fileName = "";
 
-                    // If file is attached, process it with strict timeout and fallback
+                    // Process attachment if exists
                     if (attachment) {
                         fileName = attachment.name;
                         try {
-                            // Try uploading to Firebase Storage with a strict 6-second timeout
-                            const storageRef = storage.ref(`attachments/${Date.now()}_${attachment.name}`);
-                            const uploadTask = storageRef.put(attachment);
-                            
-                            await withTimeout(uploadTask, 6000, "انتهت مهلة رفع الملف إلى المخزن السحابي.");
-                            
-                            const downloadUrlPromise = uploadTask.snapshot.ref.getDownloadURL();
-                            fileUrl = await withTimeout(downloadUrlPromise, 4000, "انتهت مهلة استخراج رابط المرفق.");
+                            // Try uploading with a strict 8-second timeout
+                            fileUrl = await withTimeout(uploadFile(attachment), 8000, "انتهت مهلة الرفع السحابي.");
                         } catch (storageError) {
-                            console.warn("Storage upload failed or timed out, trying Base64 conversion fallback...", storageError);
+                            console.warn("Cloud Storage failed, initiating Base64 fallback...", storageError);
                             try {
-                                // Base64 Fallback with 5-second timeout to prevent lockup
-                                fileUrl = await withTimeout(convertBase64(attachment), 5000, "انتهت مهلة تحويل الملف.");
+                                // Base64 Fallback with 5-second timeout
+                                fileUrl = await withTimeout(convertBase64(attachment), 5000, "انتهت مهلة تشفير الملف.");
                             } catch (base64Error) {
                                 console.error("Base64 conversion failed:", base64Error);
-                                showToast("تعذر معالجة المرفق، سيتم إرسال الطلب بدونه لتجنب التعليق.", "error");
+                                showToast("تعذر تضمين الملف المرفق، سيتم محاولة الإرسال بدونه لتجنب تعليق الطلب.", "error");
                             }
                         }
                     }
@@ -368,11 +406,30 @@
                         fileName: fileName
                     };
 
-                    // Push to Realtime Database with a strict 8-second timeout limit
-                    const pushPromise = db.ref('requests').push(newRequest);
-                    await withTimeout(pushPromise, 8000, "فشل إرسال البيانات إلى قاعدة البيانات. يرجى مراجعة صلاحيات قاعدة البيانات أو جرب لاحقاً.");
+                    try {
+                        // Push to Realtime Database with a strict 8-second timeout limit
+                        const pushPromise = db.ref('requests').push(newRequest);
+                        await withTimeout(pushPromise, 8000, "انتهت مهلة الإرسال السحابي.");
+                        showToast("تم إرسال وإدراج طلب المساعدة بنجاح واضافته إلى السجل السحابي!");
+                    } catch (dbError) {
+                        console.error("Firebase database write failed, switching to Local Storage Backup:", dbError);
+                        
+                        // Local Backup Fallback so the request is NEVER lost!
+                        const localRequests = JSON.parse(localStorage.getItem('offline_requests') || '[]');
+                        const offlineRequest = {
+                            id: 'offline_' + Date.now(),
+                            ...newRequest,
+                            isOffline: true
+                        };
+                        localRequests.push(offlineRequest);
+                        localStorage.setItem('offline_requests', JSON.stringify(localRequests));
 
-                    // Reset form and states on successful push
+                        // Add to live view state instantly
+                        setRequests(prev => [offlineRequest, ...prev]);
+                        showToast("تم حفظ الطلب محلياً على جهازك بنجاح بسبب عطل سحابي مؤقت!", "success");
+                    }
+
+                    // Reset form and states on successful operation
                     setFormData({
                         fullName: '',
                         nationalId: '',
@@ -387,18 +444,27 @@
                     const fileInput = document.getElementById('file-upload');
                     if (fileInput) fileInput.value = '';
 
-                    showToast("تم إرسال وإدراج طلب المساعدة بنجاح واضافته إلى السجل!");
                     setActiveTab('list'); // return to list view
                 } catch (error) {
                     console.error("Error submitting request: ", error);
-                    showToast(`حدث خطأ أثناء إرسال البيانات: ${error.message || error}`, "error");
+                    showToast(`حدث خطأ غير متوقع: ${error.message || error}`, "error");
                 } finally {
                     setSubmitting(false);
                 }
             };
 
-            // Update Status Handler
+            // Update Status Handler (With LocalStorage support)
             const handleUpdateStatus = async (id, newStatus) => {
+                if (id.toString().startsWith('offline_')) {
+                    // Update locally saved request
+                    const localRequests = JSON.parse(localStorage.getItem('offline_requests') || '[]');
+                    const updated = localRequests.map(req => req.id === id ? { ...req, status: newStatus } : req);
+                    localStorage.setItem('offline_requests', JSON.stringify(updated));
+                    setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
+                    showToast("تم تحديث حالة الطلب المحلي بنجاح");
+                    return;
+                }
+
                 try {
                     const updatePromise = db.ref(`requests/${id}`).update({ status: newStatus });
                     await withTimeout(updatePromise, 5000, "انتهت مهلة تحديث الحالة.");
@@ -409,9 +475,19 @@
                 }
             };
 
-            // Delete Request Handler
+            // Delete Request Handler (With LocalStorage support)
             const handleDelete = async (id) => {
                 if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟")) {
+                    if (id.toString().startsWith('offline_')) {
+                        // Delete locally saved request
+                        const localRequests = JSON.parse(localStorage.getItem('offline_requests') || '[]');
+                        const filtered = localRequests.filter(req => req.id !== id);
+                        localStorage.setItem('offline_requests', JSON.stringify(filtered));
+                        setRequests(prev => prev.filter(req => req.id !== id));
+                        showToast("تم حذف الطلب المحلي بنجاح");
+                        return;
+                    }
+
                     try {
                         const deletePromise = db.ref(`requests/${id}`).remove();
                         await withTimeout(deletePromise, 5000, "انتهت مهلة حذف الطلب.");
@@ -582,6 +658,11 @@
                                                     <div>
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <h3 className="text-md font-bold text-gray-900">{req.fullName}</h3>
+                                                            {req.isOffline && (
+                                                                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                                                                    حفظ محلي (جهازك)
+                                                                </span>
+                                                            )}
                                                             <span className={`status-badge ${
                                                                 req.status === 'approved' ? 'status-approved' : 
                                                                 req.status === 'rejected' ? 'status-rejected' : 'status-pending'
@@ -752,7 +833,7 @@
                                     </div>
 
                                     <div>
-                                        <label className="block text-gray-600 text-xs font-semibold mb-1">إرفاق مستندات ثبوتية أو تقارير داعمة (اختياري)</label>
+                                        <label className="block text-gray-600 text-xs font-semibold mb-1">إرفاق مستندات ثبوتية أو تقارير داعمة (اختياري - حد أقصى 2MB)</label>
                                         <div className="mt-1 flex justify-center px-4 pt-4 pb-4 border-2 border-gray-200 border-dashed rounded-lg bg-gray-50">
                                             <div className="space-y-1 text-center">
                                                 <svg className="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -817,5 +898,4 @@
     </script>
 </body>
 </html>
-
 
