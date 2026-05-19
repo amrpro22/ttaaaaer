@@ -202,6 +202,26 @@
         const db = firebase.database();
         const storage = firebase.storage();
 
+        // Helper function to force promise timeout and prevent infinite hanging
+        const withTimeout = (promise, ms, errorMessage) => {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    reject(new Error(errorMessage || "انتهت مهلة الاستجابة من الخادم. يرجى التحقق من اتصالك بالإنترنت."));
+                }, ms);
+
+                promise.then(
+                    (res) => {
+                        clearTimeout(timer);
+                        resolve(res);
+                    },
+                    (err) => {
+                        clearTimeout(timer);
+                        reject(err);
+                    }
+                );
+            });
+        };
+
         function App() {
             const [activeTab, setActiveTab] = useState('list'); // 'list' or 'new'
             const [requests, setRequests] = useState([]);
@@ -224,10 +244,25 @@
             const [attachment, setAttachment] = useState(null);
             const [submitting, setSubmitting] = useState(false);
 
-            // Fetch requests on component mount
+            // Fetch requests and handle anonymous sign-in on component mount
             useEffect(() => {
+                // 1. Sign in anonymously to ensure writes/reads are authorized by rules
+                firebase.auth().signInAnonymously()
+                    .then(() => {
+                        console.log("Logged in anonymously successfully.");
+                    })
+                    .catch((authError) => {
+                        console.warn("Auth initialization failed or skipped:", authError);
+                    });
+
+                // 2. Fetch data with built-in UI safety timeout
+                const loadingTimeout = setTimeout(() => {
+                    setLoading(false);
+                }, 8000);
+
                 const requestsRef = db.ref('requests');
                 requestsRef.on('value', (snapshot) => {
+                    clearTimeout(loadingTimeout);
                     const data = snapshot.val();
                     const loadedRequests = [];
                     if (data) {
@@ -238,11 +273,15 @@
                     setRequests(loadedRequests.reverse());
                     setLoading(false);
                 }, (error) => {
+                    clearTimeout(loadingTimeout);
                     console.error("Error fetching data: ", error);
                     setLoading(false);
                 });
 
-                return () => requestsRef.off();
+                return () => {
+                    clearTimeout(loadingTimeout);
+                    requestsRef.off();
+                };
             }, []);
 
             // Handle Input Change for Form
@@ -263,7 +302,7 @@
                 setNotification({ show: true, message, type });
                 setTimeout(() => {
                     setNotification({ show: false, message: '', type: 'success' });
-                }, 4000);
+                }, 4500);
             };
 
             // Helper to convert file to Base64 (Fallback)
@@ -280,7 +319,7 @@
                 });
             };
 
-            // Submit Request Handler (Fixed)
+            // Submit Request Handler (Fully Robust and Protected from Hanging)
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 
@@ -296,18 +335,27 @@
                     let fileUrl = "";
                     let fileName = "";
 
-                    // If file is attached, try to process it
+                    // If file is attached, process it with strict timeout and fallback
                     if (attachment) {
                         fileName = attachment.name;
                         try {
-                            // 1. Try uploading to Firebase Storage
+                            // Try uploading to Firebase Storage with a strict 6-second timeout
                             const storageRef = storage.ref(`attachments/${Date.now()}_${attachment.name}`);
-                            const uploadTask = await storageRef.put(attachment);
-                            fileUrl = await uploadTask.ref.getDownloadURL();
+                            const uploadTask = storageRef.put(attachment);
+                            
+                            await withTimeout(uploadTask, 6000, "انتهت مهلة رفع الملف إلى المخزن السحابي.");
+                            
+                            const downloadUrlPromise = uploadTask.snapshot.ref.getDownloadURL();
+                            fileUrl = await withTimeout(downloadUrlPromise, 4000, "انتهت مهلة استخراج رابط المرفق.");
                         } catch (storageError) {
-                            console.warn("Storage upload failed or permission denied, using Base64 encoding fallback.", storageError);
-                            // 2. Base64 Fallback if Storage permissions are restricted
-                            fileUrl = await convertBase64(attachment);
+                            console.warn("Storage upload failed or timed out, trying Base64 conversion fallback...", storageError);
+                            try {
+                                // Base64 Fallback with 5-second timeout to prevent lockup
+                                fileUrl = await withTimeout(convertBase64(attachment), 5000, "انتهت مهلة تحويل الملف.");
+                            } catch (base64Error) {
+                                console.error("Base64 conversion failed:", base64Error);
+                                showToast("تعذر معالجة المرفق، سيتم إرسال الطلب بدونه لتجنب التعليق.", "error");
+                            }
                         }
                     }
 
@@ -320,10 +368,11 @@
                         fileName: fileName
                     };
 
-                    // Push to Realtime Database
-                    await db.ref('requests').push(newRequest);
+                    // Push to Realtime Database with a strict 8-second timeout limit
+                    const pushPromise = db.ref('requests').push(newRequest);
+                    await withTimeout(pushPromise, 8000, "فشل إرسال البيانات إلى قاعدة البيانات. يرجى مراجعة صلاحيات قاعدة البيانات أو جرب لاحقاً.");
 
-                    // Reset form and states
+                    // Reset form and states on successful push
                     setFormData({
                         fullName: '',
                         nationalId: '',
@@ -333,7 +382,8 @@
                         financialStatus: 'متوسط',
                     });
                     setAttachment(null);
-                    // Reset file input element
+                    
+                    // Reset file input element safely
                     const fileInput = document.getElementById('file-upload');
                     if (fileInput) fileInput.value = '';
 
@@ -341,7 +391,7 @@
                     setActiveTab('list'); // return to list view
                 } catch (error) {
                     console.error("Error submitting request: ", error);
-                    showToast(`حدث خطأ أثناء إرسال البيانات: ${error.message}`, "error");
+                    showToast(`حدث خطأ أثناء إرسال البيانات: ${error.message || error}`, "error");
                 } finally {
                     setSubmitting(false);
                 }
@@ -350,11 +400,12 @@
             // Update Status Handler
             const handleUpdateStatus = async (id, newStatus) => {
                 try {
-                    await db.ref(`requests/${id}`).update({ status: newStatus });
+                    const updatePromise = db.ref(`requests/${id}`).update({ status: newStatus });
+                    await withTimeout(updatePromise, 5000, "انتهت مهلة تحديث الحالة.");
                     showToast(`تم تحديث حالة الطلب بنجاح`);
                 } catch (error) {
                     console.error("Error updating status: ", error);
-                    showToast("فشل تحديث حالة الطلب", "error");
+                    showToast(`فشل تحديث حالة الطلب: ${error.message || error}`, "error");
                 }
             };
 
@@ -362,11 +413,12 @@
             const handleDelete = async (id) => {
                 if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟")) {
                     try {
-                        await db.ref(`requests/${id}`).remove();
+                        const deletePromise = db.ref(`requests/${id}`).remove();
+                        await withTimeout(deletePromise, 5000, "انتهت مهلة حذف الطلب.");
                         showToast("تم حذف الطلب بنجاح");
                     } catch (error) {
                         console.error("Error deleting: ", error);
-                        showToast("فشل في حذف الطلب", "error");
+                        showToast(`فشل في حذف الطلب: ${error.message || error}`, "error");
                     }
                 }
             };
