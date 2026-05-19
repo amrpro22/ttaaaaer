@@ -3,502 +3,767 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تقديم طلب مساعدة - نظام الصرف</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>لوحة تحكم المشرف - إدارة طلبات المساعدة</title>
     
-    <script src="https://cdn.tailwindcss.com/"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
-        body { 
-            font-family: 'IBM Plex Sans Arabic', sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            min-height: 100vh; 
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+        
+        * { 
+            -webkit-font-smoothing: antialiased; 
+            -moz-osx-font-smoothing: grayscale; 
+            box-sizing: border-box;
         }
-        .btn-press:active { transform: scale(0.97); }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .status-pending { background: #fef3c7; border-right: 4px solid #f59e0b; }
-        .status-approved { background: #d1fae5; border-right: 4px solid #10b981; }
-        .status-rejected { background: #fee2e2; border-right: 4px solid #ef4444; }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: #f5f5f7;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+            width: 100%;
+            /* منع التكبير بالنقر المزدوج على مستوى الصفحة بالكامل */
+            touch-action: pan-x pan-y;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        /* تثبيت أقصى عرض للصفحة لمنع تمدد العناصر في الشاشات الواسعة جداً */
+        .app-container {
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid #eef2f6;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #ff950015; color: #ff9500; }
+        .status-approved { background: #34c75915; color: #34c759; }
+        .status-rejected { background: #ff3b3015; color: #ff3b30; }
+
+        .file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #007aff;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .file-link:hover {
+            background: #007aff;
+            color: white;
+        }
+
+        .tab-button {
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .tab-active {
+            background: #ffffff;
+            color: #1e3c72;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-inactive {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .tab-inactive:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .search-input {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            width: 100%;
+            font-size: 16px !important; /* يمنع الـ iOS Zoom تلقائياً */
+            background-color: #f8fafc;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #007aff;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        /* تثبيت صارم لجميع حقول الإدخال والنصوص لمنع التكبير والتمدد والزووم نهائياً */
+        input, select, textarea, .search-input {
+            font-size: 16px !important; /* إلزامي لمنع متصفحات الهواتف من عمل Zoom */
+            resize: none !important; /* إلغاء التكبير اليدوي */
+            max-width: 100% !important;
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+            touch-action: manipulation !important; /* إلغاء التكبير بالنقر المتتالي */
+        }
+
+        input:focus, select:focus, textarea:focus {
+            font-size: 16px !important;
+            outline: none;
+        }
+
+        /* تجميل تصميم الجوال مع بقاء الهيكل الإنشائي ثابتاً 100% */
+        @media (max-width: 640px) {
+            body {
+                font-size: 14px;
+            }
+            input, select, textarea {
+                font-size: 16px !important; /* يبقى ثابتاً لمنع زووم لوحة المفاتيح */
+            }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <!-- كود حماية لمنع التكبير وتشويه الصفحة بالإيماءات تماماً (Professional Guard) -->
+    <script>
+        // منع تقريب الصفحة نهائياً عند استخدام إصبعين (Pinch to zoom)
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+        document.addEventListener('gesturechange', function (e) {
+            e.preventDefault();
+        });
+    </script>
 
-        // Firebase Config
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Configuration Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
-            authDomain: "magdi-50c75.firebaseapp.com",
-            databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com",
-            projectId: "magdi-50c75",
-            storageBucket: "magdi-50c75.firebasestorage.app",
-            messagingSenderId: "329518389376",
-            appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
+            apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
+            authDomain: "amr4admin.firebaseapp.com",
+            projectId: "amr4admin",
+            storageBucket: "amr4admin.firebasestorage.app",
+            databaseURL: "https://amr4admin-default-rtdb.firebaseio.com"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const db = firebase.database();
+        const storage = firebase.storage();
 
-        // Types of cases
-        const caseTypes = [
-            { value: 'accident', label: '🚗 حادث', icon: '🚗' },
-            { value: 'disease', label: '🏥 مرض', icon: '🏥' },
-            { value: 'treatment', label: '💊 علاج', icon: '💊' },
-            { value: 'travelTreatment', label: '✈️ سفر للعلاج', icon: '✈️' },
-            { value: 'marriage', label: '💑 زواج', icon: '💑' },
-            { value: 'zakatCharity', label: '🕌 صدقة من مال الزكاة', icon: '🕌' },
-            { value: 'financialAid', label: '💰 مساعدة مالية', icon: '💰' },
-            { value: 'other', label: '📌 أخرى', icon: '📌' }
-        ];
-
-        const App = () => {
-            const [view, setView] = useState('form'); // 'form' or 'track'
-            const [submittedRequest, setSubmittedRequest] = useState(null);
-            const [trackingId, setTrackingId] = useState('');
-            const [trackedRequest, setTrackedRequest] = useState(null);
-            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
+        function App() {
+            const [activeTab, setActiveTab] = useState('list'); // 'list' or 'new'
+            const [requests, setRequests] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [statusFilter, setStatusFilter] = useState('all');
             
-            // Custom notification modal state
-            const [notification, setNotification] = useState(null);
+            // Notification State
+            const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
-            const showNotification = (message, type = 'success') => {
-                setNotification({ message, type });
+            // Form States for New Request
+            const [formData, setFormData] = useState({
+                fullName: '',
+                nationalId: '',
+                phone: '',
+                assistanceType: 'مالية',
+                description: '',
+                financialStatus: 'متوسط',
+            });
+            const [attachment, setAttachment] = useState(null);
+            const [submitting, setSubmitting] = useState(false);
+
+            // Fetch requests on component mount
+            useEffect(() => {
+                const requestsRef = db.ref('requests');
+                requestsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const loadedRequests = [];
+                    if (data) {
+                        for (let id in data) {
+                            loadedRequests.push({ id, ...data[id] });
+                        }
+                    }
+                    setRequests(loadedRequests.reverse());
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching data: ", error);
+                    setLoading(false);
+                });
+
+                return () => requestsRef.off();
+            }, []);
+
+            // Handle Input Change for Form
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
             };
 
-            // Get location
-            useEffect(() => {
-                fetch('https://ipapi.co/json/')
-                    .then(res => res.json())
-                    .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
-                    .catch(() => setGeoInfo({ location: 'اليمن' }));
-            }, []);
+            // Handle File Change
+            const handleFileChange = (e) => {
+                if (e.target.files[0]) {
+                    setAttachment(e.target.files[0]);
+                }
+            };
 
-            // Anonymous auth
-            useEffect(() => {
-                auth.signInAnonymously().catch(console.error);
-            }, []);
+            // Show Toast Notification
+            const showToast = (message, type = 'success') => {
+                setNotification({ show: true, message, type });
+                setTimeout(() => {
+                    setNotification({ show: false, message: '', type: 'success' });
+                }, 4000);
+            };
 
-            return (
-                <div className="min-h-screen py-8 px-4">
-                    <div className="max-w-2xl mx-auto">
-                        
-                        {/* Custom Notification Toast */}
-                        {notification && (
-                            <div className="fixed top-4 left-4 right-4 z-50 flex justify-center pointer-events-none fade-in">
-                                <div className={`px-6 py-4 rounded-2xl shadow-2xl text-white font-bold flex items-center gap-3 max-w-md pointer-events-auto ${
-                                    notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'
-                                }`}>
-                                    <span>{notification.type === 'error' ? '⚠️' : '✨'}</span>
-                                    <span>{notification.message}</span>
-                                    <button 
-                                        onClick={() => setNotification(null)}
-                                        className="mr-auto text-white/80 hover:text-white font-normal"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+            // Helper to convert file to Base64 (Fallback)
+            const convertBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const fileReader = new FileReader();
+                    fileReader.readAsDataURL(file);
+                    fileReader.onload = () => {
+                        resolve(fileReader.result);
+                    };
+                    fileReader.onerror = (error) => {
+                        reject(error);
+                    };
+                });
+            };
 
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <div className="inline-block p-4 bg-white/20 backdrop-blur rounded-full mb-4">
-                                <span className="text-5xl">📝</span>
-                            </div>
-                            <h1 className="text-3xl font-bold text-white">تقديم طلب مساعدة</h1>
-                            <p className="text-white/80 mt-2">نظام الصرف المتكامل - صندوق الحالات الطارئة</p>
-                        </div>
-
-                        {/* Toggle Buttons */}
-                        <div className="flex gap-3 mb-6">
-                            <button 
-                                onClick={() => { setView('form'); setSubmittedRequest(null); }}
-                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
-                            >
-                                📝 تقديم طلب جديد
-                            </button>
-                            <button 
-                                onClick={() => { setView('track'); setTrackedRequest(null); }}
-                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
-                            >
-                                🔍 متابعة طلب
-                            </button>
-                        </div>
-
-                        {/* Request Form */}
-                        {view === 'form' && !submittedRequest && (
-                            <RequestForm 
-                                onSubmit={(requestId) => setSubmittedRequest({ id: requestId, status: 'pending' })} 
-                                geoInfo={geoInfo} 
-                                caseTypes={caseTypes} 
-                                showNotification={showNotification}
-                            />
-                        )}
-                        
-                        {/* Submission Result */}
-                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} />}
-                        
-                        {/* Track Request */}
-                        {view === 'track' && (
-                            <TrackRequest 
-                                trackingId={trackingId} 
-                                setTrackingId={setTrackingId} 
-                                trackedRequest={trackedRequest} 
-                                setTrackedRequest={setTrackedRequest} 
-                                showNotification={showNotification}
-                            />
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        // Request Form Component
-        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification }) => {
-            const [formData, setFormData] = useState({
-                caseName: '',
-                caseDetails: '',
-                caseType: '',
-                requesterName: '',
-                requestDate: new Date().toISOString().split('T')[0],
-                urgencyLevel: 'urgent',
-                incomeReport: '',
-                requestAmount: '',
-                preferredCurrency: 'yer'
-            });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
+            // Submit Request Handler (Fixed)
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                setIsSubmitting(true);
                 
-                try {
-                    const newRequestRef = database.ref('assistanceRequests').push();
-                    const requestId = newRequestRef.key;
-                    
-                    await newRequestRef.set({
-                        ...formData,
-                        requestId: requestId,
-                        location: geoInfo.location,
-                        status: 'pending',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    showNotification('تم إرسال طلبك بنجاح!');
-                    onSubmit(requestId);
-                } catch (error) {
-                    console.error(error);
-                    showNotification('حدث خطأ في إرسال الطلب، يرجى المحاولة لاحقاً', 'error');
-                } finally {
-                    setIsSubmitting(false);
-                }
-            };
-
-            return (
-                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم الحالة *</label>
-                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                    value={formData.caseName} onChange={(e) => setFormData({...formData, caseName: e.target.value})}
-                                    placeholder="مثال: حالة عائلة أحمد" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم مقدم الحالة *</label>
-                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                    value={formData.requesterName} onChange={(e) => setFormData({...formData, requesterName: e.target.value})}
-                                    placeholder="الاسم الكامل" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">نوع الحالة *</label>
-                            <select required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                value={formData.caseType} onChange={(e) => setFormData({...formData, caseType: e.target.value})}>
-                                <option value="">اختر نوع الحالة</option>
-                                {caseTypes.map(type => (
-                                    <option key={type.value} value={type.value}>{type.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">تفاصيل شاملة عن الحالة *</label>
-                            <textarea required rows="5" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                value={formData.caseDetails} onChange={(e) => setFormData({...formData, caseDetails: e.target.value})}
-                                placeholder="اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..."></textarea>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">تقرير شامل عن مستوى دخل الحالة *</label>
-                            <textarea required rows="4" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                value={formData.incomeReport} onChange={(e) => setFormData({...formData, incomeReport: e.target.value})}
-                                placeholder="صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..."></textarea>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ المطلوب</label>
-                                <input type="number" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                    value={formData.requestAmount} onChange={(e) => setFormData({...formData, requestAmount: e.target.value})}
-                                    placeholder="المبلغ" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">العملة</label>
-                                <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                    value={formData.preferredCurrency} onChange={(e) => setFormData({...formData, preferredCurrency: e.target.value})}>
-                                    <option value="yer">🇾🇪 ريال يمني</option>
-                                    <option value="sar">🇸🇦 ريال سعودي</option>
-                                    <option value="usd">🇺🇸 دولار</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">التاريخ *</label>
-                                <input type="date" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
-                                    value={formData.requestDate} onChange={(e) => setFormData({...formData, requestDate: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">مستوى تقديم الطلب *</label>
-                                <div className="flex gap-4 pt-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" value="urgent" checked={formData.urgencyLevel === 'urgent'} 
-                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
-                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">🚨 مستعجل</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" value="notUrgent" checked={formData.urgencyLevel === 'notUrgent'} 
-                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">✅ غير مستعجل</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-500">
-                            📍 موقع التقديم الحالي: {geoInfo.location}
-                        </div>
-
-                        <button type="submit" disabled={isSubmitting} 
-                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg transition-all hover:shadow-xl btn-press disabled:opacity-50">
-                            {isSubmitting ? 'جاري الإرسال...' : '📤 إرسال الطلب'}
-                        </button>
-                    </form>
-                </div>
-            );
-        };
-
-        // Submission Result Component
-        const SubmissionResult = ({ request, onNewRequest }) => {
-            const [currentStatus, setCurrentStatus] = useState(request.status);
-            
-            useEffect(() => {
-                const statusRef = database.ref(`assistanceRequests/${request.id}/status`);
-                const unsubscribe = statusRef.on('value', (snapshot) => {
-                    const status = snapshot.val();
-                    if (status) setCurrentStatus(status);
-                });
-                return () => statusRef.off();
-            }, [request.id]);
-
-            const getStatusContent = () => {
-                switch(currentStatus) {
-                    case 'pending':
-                        return {
-                            icon: '⏳',
-                            title: 'قيد المراجعة',
-                            color: 'text-yellow-600',
-                            bg: 'bg-yellow-100',
-                            message: 'تم استلام طلبك بنجاح، وهو قيد المراجعة من قبل الفريق المسؤول'
-                        };
-                    case 'approved':
-                        return {
-                            icon: '✅',
-                            title: 'تمت الموافقة على الطلب',
-                            color: 'text-green-600',
-                            bg: 'bg-green-100',
-                            message: 'تمت الموافقة على طلبك، سيتم التواصل معك قريباً'
-                        };
-                    case 'rejected':
-                        return {
-                            icon: '❌',
-                            title: 'تم رفض الطلب',
-                            color: 'text-red-600',
-                            bg: 'bg-red-100',
-                            message: 'نأسف لرفض طلبك، يمكنك التواصل مع الإدارة لمعرفة الأسباب'
-                        };
-                    default:
-                        return {
-                            icon: '⏳',
-                            title: 'قيد المراجعة',
-                            color: 'text-yellow-600',
-                            bg: 'bg-yellow-100',
-                            message: 'جاري مراجعة طلبك'
-                        };
-                }
-            };
-
-            const statusContent = getStatusContent();
-
-            return (
-                <div className="bg-white rounded-3xl shadow-2xl p-8 text-center fade-in">
-                    <div className={`inline-block p-4 ${statusContent.bg} rounded-full mb-6`}>
-                        <span className="text-6xl">{statusContent.icon}</span>
-                    </div>
-                    
-                    <h2 className={`text-2xl font-bold ${statusContent.color} mb-4`}>{statusContent.title}</h2>
-                    
-                    <p className="text-gray-600 mb-6">{statusContent.message}</p>
-                    
-                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                        <p className="text-sm text-gray-500 mb-2">رقم الطلب المرجعي:</p>
-                        <p className="text-lg font-mono font-bold text-purple-600 selection:bg-purple-200">{request.id}</p>
-                        <p className="text-xs text-gray-400 mt-3">⚠️ احتفظ بهذا الرقم لمتابعة طلبك</p>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button onClick={onNewRequest} 
-                            className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold btn-press">
-                            تقديم طلب جديد
-                        </button>
-                        <button onClick={() => window.location.reload()} 
-                            className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold btn-press">
-                            الصفحة الرئيسية
-                        </button>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t">
-                        <p className="text-xs text-gray-400">
-                            سيتم تحديث حالة الطلب تلقائياً عند المراجعة
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        // Track Request Component
-        const TrackRequest = ({ trackingId, setTrackingId, trackedRequest, setTrackedRequest, showNotification }) => {
-            const [isLoading, setIsLoading] = useState(false);
-
-            const checkStatus = async () => {
-                if (!trackingId.trim()) {
-                    showNotification('الرجاء إدخال رقم الطلب أولاً', 'error');
+                // Form validation check
+                if (!formData.fullName || !formData.nationalId || !formData.phone || !formData.description) {
+                    showToast("يرجى ملء جميع الحقول الإلزامية المطلوبة", "error");
                     return;
                 }
-                setIsLoading(true);
-                
-                const requestRef = database.ref(`assistanceRequests/${trackingId.trim()}`);
-                requestRef.once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        setTrackedRequest({ id: trackingId.trim(), ...data });
-                        showNotification('تم العثور على الطلب بنجاح!');
-                    } else {
-                        showNotification('لم يتم العثور على الرقم المرجعي للطلب', 'error');
-                        setTrackedRequest(null);
-                    }
-                    setIsLoading(false);
-                });
-            };
 
-            const getStatusDisplay = (status) => {
-                switch(status) {
-                    case 'pending': return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
-                    case 'approved': return { text: '✅ تمت الموافقة', bg: 'status-approved' };
-                    case 'rejected': return { text: '❌ تم الرفض', bg: 'status-rejected' };
-                    default: return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
+                setSubmitting(true);
+
+                try {
+                    let fileUrl = "";
+                    let fileName = "";
+
+                    // If file is attached, try to process it
+                    if (attachment) {
+                        fileName = attachment.name;
+                        try {
+                            // 1. Try uploading to Firebase Storage
+                            const storageRef = storage.ref(`attachments/${Date.now()}_${attachment.name}`);
+                            const uploadTask = await storageRef.put(attachment);
+                            fileUrl = await uploadTask.ref.getDownloadURL();
+                        } catch (storageError) {
+                            console.warn("Storage upload failed or permission denied, using Base64 encoding fallback.", storageError);
+                            // 2. Base64 Fallback if Storage permissions are restricted
+                            fileUrl = await convertBase64(attachment);
+                        }
+                    }
+
+                    // Prepare final data payload
+                    const newRequest = {
+                        ...formData,
+                        createdAt: new Date().toISOString(),
+                        status: 'pending', // default status
+                        fileUrl: fileUrl,
+                        fileName: fileName
+                    };
+
+                    // Push to Realtime Database
+                    await db.ref('requests').push(newRequest);
+
+                    // Reset form and states
+                    setFormData({
+                        fullName: '',
+                        nationalId: '',
+                        phone: '',
+                        assistanceType: 'مالية',
+                        description: '',
+                        financialStatus: 'متوسط',
+                    });
+                    setAttachment(null);
+                    // Reset file input element
+                    const fileInput = document.getElementById('file-upload');
+                    if (fileInput) fileInput.value = '';
+
+                    showToast("تم إرسال وإدراج طلب المساعدة بنجاح واضافته إلى السجل!");
+                    setActiveTab('list'); // return to list view
+                } catch (error) {
+                    console.error("Error submitting request: ", error);
+                    showToast(`حدث خطأ أثناء إرسال البيانات: ${error.message}`, "error");
+                } finally {
+                    setSubmitting(false);
                 }
             };
 
-            const getCaseTypeLabel = (typeValue) => {
-                const types = {
-                    'accident': '🚗 حادث', 'disease': '🏥 مرض', 'treatment': '💊 علاج',
-                    'travelTreatment': '✈️ سفر للعلاج', 'marriage': '💑 زواج',
-                    'zakatCharity': '🕌 صدقة زكاة', 'financialAid': '💰 مساعدة مالية', 'other': '📌 أخرى'
-                };
-                return types[typeValue] || typeValue;
+            // Update Status Handler
+            const handleUpdateStatus = async (id, newStatus) => {
+                try {
+                    await db.ref(`requests/${id}`).update({ status: newStatus });
+                    showToast(`تم تحديث حالة الطلب بنجاح`);
+                } catch (error) {
+                    console.error("Error updating status: ", error);
+                    showToast("فشل تحديث حالة الطلب", "error");
+                }
             };
 
+            // Delete Request Handler
+            const handleDelete = async (id) => {
+                if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟")) {
+                    try {
+                        await db.ref(`requests/${id}`).remove();
+                        showToast("تم حذف الطلب بنجاح");
+                    } catch (error) {
+                        console.error("Error deleting: ", error);
+                        showToast("فشل في حذف الطلب", "error");
+                    }
+                }
+            };
+
+            // Download PDF Report
+            const downloadPDF = (request) => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: "p",
+                    unit: "mm",
+                    format: "a4"
+                });
+
+                // Simple layout for PDF Report
+                doc.setFont("Helvetica", "bold");
+                doc.text("Request Certificate for Assistance", 105, 20, { align: "center" });
+                doc.setFont("Helvetica", "normal");
+                doc.line(20, 25, 190, 25);
+                
+                doc.text(`Applicant Name: ${request.fullName}`, 20, 40);
+                doc.text(`National ID / Passport: ${request.nationalId}`, 20, 50);
+                doc.text(`Phone: ${request.phone}`, 20, 60);
+                doc.text(`Assistance Type: ${request.assistanceType}`, 20, 70);
+                doc.text(`Financial Status: ${request.financialStatus}`, 20, 80);
+                doc.text(`Created Date: ${new Date(request.createdAt).toLocaleDateString('ar-EG')}`, 20, 90);
+                doc.text(`Status: ${request.status === 'pending' ? 'Pending' : request.status === 'approved' ? 'Approved' : 'Rejected'}`, 20, 100);
+                
+                doc.text("Description of the case:", 20, 115);
+                const splitDesc = doc.splitTextToSize(request.description || "No description provided.", 170);
+                doc.text(splitDesc, 20, 125);
+                
+                doc.line(20, 260, 190, 260);
+                doc.text("Generated by Assistance Admin Control Panel", 105, 270, { align: "center" });
+
+                doc.save(`Request_${request.nationalId}.pdf`);
+                showToast("جاري تحميل التقرير PDF...");
+            };
+
+            // Filter requests based on Search Query & Status Filter
+            const filteredRequests = useMemo(() => {
+                return requests.filter(req => {
+                    const matchesSearch = (req.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                           req.nationalId?.includes(searchQuery) ||
+                                           req.phone?.includes(searchQuery));
+                    const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
+                    return matchesSearch && matchesStatus;
+                });
+            }, [requests, searchQuery, statusFilter]);
+
+            // Dashboard Statistics
+            const stats = useMemo(() => {
+                return {
+                    total: requests.length,
+                    pending: requests.filter(r => r.status === 'pending').length,
+                    approved: requests.filter(r => r.status === 'approved').length,
+                    rejected: requests.filter(r => r.status === 'rejected').length
+                };
+            }, [requests]);
+
             return (
-                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
-                    <h3 className="text-lg font-bold mb-4 text-center text-gray-800">🔍 متابعة طلب مساعدة</h3>
-                    
-                    <div className="flex gap-3 mb-6">
-                        <input type="text" 
-                            placeholder="أدخل رقم الطلب" 
-                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-left"
-                            dir="ltr"
-                            value={trackingId} 
-                            onChange={(e) => setTrackingId(e.target.value)} />
-                        <button onClick={checkStatus} disabled={isLoading}
-                            className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[80px]">
-                            {isLoading ? 'جاري...' : 'بحث'}
-                        </button>
-                    </div>
-
-                    {trackedRequest && (
-                        <div className={`rounded-2xl p-5 ${getStatusDisplay(trackedRequest.status).bg} fade-in text-gray-800`}>
-                            <div className="flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3">
-                                <div>
-                                    <h4 className="font-bold text-lg">{trackedRequest.caseName}</h4>
-                                    <p className="text-sm text-gray-600 mt-1">👤 مقدم الطلب: {trackedRequest.requesterName}</p>
-                                </div>
-                                <div className="text-2xl">{getStatusDisplay(trackedRequest.status).text.split(' ')[0]}</div>
-                            </div>
-                            
-                            <div className="space-y-3 text-sm">
-                                <p><span className="font-bold">🏷️ نوع الحالة:</span> {getCaseTypeLabel(trackedRequest.caseType)}</p>
-                                <p><span className="font-bold">📅 تاريخ التقديم:</span> {trackedRequest.requestDate}</p>
-                                {trackedRequest.requestAmount && (
-                                    <p><span className="font-bold">💰 المبلغ المطلوب:</span> {parseFloat(trackedRequest.requestAmount).toLocaleString()} 
-                                        {trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي'}</p>
-                                )}
-                                <p><span className="font-bold">⚡ مستوى الاستعجال:</span> 
-                                    {trackedRequest.urgencyLevel === 'urgent' ? ' 🚨 مستعجل' : ' ✅ غير مستعجل'}</p>
-                                <div className="bg-white/40 p-3 rounded-xl mt-2">
-                                    <span className="font-bold block mb-1 text-xs text-gray-500">📝 ملخص الحالة:</span>
-                                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trackedRequest.caseDetails}</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-black/10 text-center">
-                                <p className="text-sm font-bold">
-                                    حالة الطلب الحالية: {getStatusDisplay(trackedRequest.status).text}
-                                </p>
-                                {trackedRequest.reviewedAt && (
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        تمت المراجعة بتاريخ: {new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA')}
-                                    </p>
-                                )}
-                            </div>
+                <div className="min-h-screen bg-[#f5f5f7] pb-12">
+                    {/* Notification Toast */}
+                    {notification.show && (
+                        <div className={`fixed top-4 left-4 right-4 md:left-auto md:w-80 z-50 p-3 rounded-lg shadow-lg flex items-center gap-3 transition-all transform duration-300 ${
+                            notification.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                        }`}>
+                            <span className="text-lg">🔔</span>
+                            <div className="flex-1 font-medium text-xs">{notification.message}</div>
                         </div>
                     )}
 
-                    <div className="mt-6 text-center text-xs text-gray-400">
-                        <p>📌 سيتم تحديث هذه الصفحة فور مراجعة طلبك</p>
-                        <p className="mt-1">يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت</p>
-                    </div>
+                    {/* Header with Fixed Max-Width limits */}
+                    <header className="admin-header text-white py-4 px-4 shadow-sm">
+                        <div className="app-container flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-lg md:text-xl font-bold tracking-tight">نظام إدارة طلبات المساعدة</h1>
+                                <p className="text-white/80 text-xs mt-0.5">لوحة تحكم وتوجيه طلبات الدعم</p>
+                            </div>
+                            <div className="flex gap-2 self-start sm:self-auto">
+                                <button 
+                                    onClick={() => setActiveTab('list')}
+                                    className={`tab-button ${activeTab === 'list' ? 'tab-active' : 'tab-inactive'}`}
+                                >
+                                    عرض السجل والطلبات
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('new')}
+                                    className={`tab-button ${activeTab === 'new' ? 'tab-active' : 'tab-inactive'}`}
+                                >
+                                    إضافة طلب جديد +
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="app-container px-4 mt-6">
+                        {/* Summary Stats Cards (Fixed Compact Grid) */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="admin-card p-4 flex flex-col justify-between">
+                                <span className="text-gray-500 text-[11px] font-bold tracking-wider">إجمالي الطلبات</span>
+                                <span className="text-xl font-extrabold text-gray-800 mt-1">{stats.total}</span>
+                            </div>
+                            <div className="admin-card p-4 flex flex-col justify-between">
+                                <span className="text-amber-500 text-[11px] font-bold tracking-wider">قيد الانتظار</span>
+                                <span className="text-xl font-extrabold text-amber-500 mt-1">{stats.pending}</span>
+                            </div>
+                            <div className="admin-card p-4 flex flex-col justify-between">
+                                <span className="text-emerald-600 text-[11px] font-bold tracking-wider">تمت الموافقة</span>
+                                <span className="text-xl font-extrabold text-emerald-600 mt-1">{stats.approved}</span>
+                            </div>
+                            <div className="admin-card p-4 flex flex-col justify-between">
+                                <span className="text-rose-500 text-[11px] font-bold tracking-wider">الطلبات المرفوضة</span>
+                                <span className="text-xl font-extrabold text-rose-500 mt-1">{stats.rejected}</span>
+                            </div>
+                        </div>
+
+                        {/* LIST VIEW */}
+                        {activeTab === 'list' && (
+                            <div>
+                                {/* Filters and Search (Fixed Compact height) */}
+                                <div className="admin-card p-3 mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                                    <div className="w-full sm:w-2/3">
+                                        <input 
+                                            type="text" 
+                                            placeholder="ابحث بالاسم، رقم الهوية، أو رقم الجوال..." 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="search-input text-right"
+                                        />
+                                    </div>
+                                    <div className="w-full sm:w-1/3 flex gap-2">
+                                        <select 
+                                            value={statusFilter} 
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className="search-input bg-white"
+                                        >
+                                            <option value="all">كل الحالات</option>
+                                            <option value="pending">قيد الانتظار</option>
+                                            <option value="approved">مقبول</option>
+                                            <option value="rejected">مرفوض</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Requests List */}
+                                {loading ? (
+                                    <div className="text-center py-12">
+                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                                        <p className="mt-4 text-xs text-gray-500">جاري تحميل البيانات الحالية...</p>
+                                    </div>
+                                ) : filteredRequests.length === 0 ? (
+                                    <div className="admin-card p-8 text-center text-gray-500">
+                                        <span className="text-4xl block mb-2">📂</span>
+                                        <p className="text-sm">لا توجد طلبات مسجلة تطابق بحثك حالياً.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {filteredRequests.map((req) => (
+                                            <div key={req.id} className="admin-card p-5 hover:shadow-md transition-shadow">
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-gray-100 pb-3 mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h3 className="text-md font-bold text-gray-900">{req.fullName}</h3>
+                                                            <span className={`status-badge ${
+                                                                req.status === 'approved' ? 'status-approved' : 
+                                                                req.status === 'rejected' ? 'status-rejected' : 'status-pending'
+                                                            }`}>
+                                                                {req.status === 'approved' ? 'مقبول' : req.status === 'rejected' ? 'مرفوض' : 'معلق قيد المراجعة'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-gray-400 text-xs mt-1">الهوية: {req.nationalId} | الجوال: {req.phone}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-gray-400 text-[10px] block">تاريخ الإدراج</span>
+                                                        <span className="text-gray-600 text-xs font-medium">{new Date(req.createdAt).toLocaleDateString('ar-EG')}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Request details (Clean Fixed Layout) */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 text-xs text-gray-700">
+                                                    <div>
+                                                        <span className="font-semibold text-gray-400 text-[10px] block">نوع الدعم والمساعدة</span>
+                                                        <span className="text-sm text-gray-800 font-medium">{req.assistanceType}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold text-gray-400 text-[10px] block">الوضع المالي المذكور</span>
+                                                        <span className="text-sm text-gray-800 font-medium">{req.financialStatus}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold text-gray-400 text-[10px] block">المرفقات والمستندات</span>
+                                                        {req.fileUrl ? (
+                                                            <a href={req.fileUrl} target="_blank" rel="noopener noreferrer" className="file-link mt-1">
+                                                                📂 عرض المستند ({req.fileName || "تحميل"})
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic">لا يوجد مرفقات</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-gray-50 p-3 rounded-lg text-gray-700 text-xs mb-3 leading-relaxed">
+                                                    <span className="font-semibold text-gray-500 block text-[10px] mb-1">وصف الحالة والشرح:</span>
+                                                    {req.description}
+                                                </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                                                    <div className="flex gap-1.5">
+                                                        <button 
+                                                            onClick={() => handleUpdateStatus(req.id, 'approved')}
+                                                            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-[11px] font-bold transition"
+                                                        >
+                                                            موافقة ونشر
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleUpdateStatus(req.id, 'rejected')}
+                                                            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-md text-[11px] font-bold transition"
+                                                        >
+                                                            رفض
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-1.5">
+                                                        <button 
+                                                            onClick={() => downloadPDF(req)}
+                                                            className="px-2.5 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-md text-[11px] font-semibold transition flex items-center gap-1"
+                                                        >
+                                                            📄 تقرير PDF
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDelete(req.id)}
+                                                            className="px-2.5 py-1.5 border border-rose-200 text-rose-500 hover:bg-rose-50 rounded-md text-[11px] font-semibold transition"
+                                                        >
+                                                            حذف
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* NEW REQUEST FORM (Fixed Maximum Width & Sizes) */}
+                        {activeTab === 'new' && (
+                            <div className="admin-card p-6 max-w-2xl mx-auto border border-gray-100">
+                                <h2 className="text-md font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">إضافة طلب مساعدة جديد في السجل</h2>
+                                
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-gray-600 text-xs font-semibold mb-1">اسم صاحب الطلب الكامل *</label>
+                                            <input 
+                                                type="text" 
+                                                name="fullName"
+                                                value={formData.fullName}
+                                                onChange={handleInputChange}
+                                                placeholder="الاسم الثلاثي أو الرباعي" 
+                                                className="search-input"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 text-xs font-semibold mb-1">رقم الهوية الوطنية / جواز السفر *</label>
+                                            <input 
+                                                type="text" 
+                                                name="nationalId"
+                                                value={formData.nationalId}
+                                                onChange={handleInputChange}
+                                                placeholder="مثال: 1029384756" 
+                                                className="search-input"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-gray-600 text-xs font-semibold mb-1">رقم الجوال الفعال *</label>
+                                            <input 
+                                                type="tel" 
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={handleInputChange}
+                                                placeholder="05xxxxxxx" 
+                                                className="search-input text-left"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 text-xs font-semibold mb-1">نوع المساعدة المرجوة *</label>
+                                            <select 
+                                                name="assistanceType"
+                                                value={formData.assistanceType}
+                                                onChange={handleInputChange}
+                                                className="search-input bg-white"
+                                            >
+                                                <option value="مالية">مالية ومادية</option>
+                                                <option value="طبية">طبية وعلاجية</option>
+                                                <option value="سكنية">توفير سكن / ترميم</option>
+                                                <option value="غذائية">سلة غذائية ومعيشية</option>
+                                                <option value="تعليمية">مستلزمات دراسة ورسوم</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 text-xs font-semibold mb-1">تصنيف الوضع المالي</label>
+                                            <select 
+                                                name="financialStatus"
+                                                value={formData.financialStatus}
+                                                onChange={handleInputChange}
+                                                className="search-input bg-white"
+                                            >
+                                                <option value="معدم">معدم تماماً</option>
+                                                <option value="صعب جدا">صعب جداً</option>
+                                                <option value="متوسط">متوسط بحاجة دعم</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-gray-600 text-xs font-semibold mb-1">شرح تفصيلي لوصف الحالة والحاجة والالتزامات *</label>
+                                        <textarea 
+                                            name="description"
+                                            rows="4"
+                                            value={formData.description}
+                                            onChange={handleInputChange}
+                                            placeholder="اكتب هنا كافة تفاصيل الحالة بالتفصيل..." 
+                                            className="search-input w-full min-h-[90px] max-h-[120px] resize-none"
+                                            required
+                                        ></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-gray-600 text-xs font-semibold mb-1">إرفاق مستندات ثبوتية أو تقارير داعمة (اختياري)</label>
+                                        <div className="mt-1 flex justify-center px-4 pt-4 pb-4 border-2 border-gray-200 border-dashed rounded-lg bg-gray-50">
+                                            <div className="space-y-1 text-center">
+                                                <svg className="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                                    <path d="M28 8H12a4 4 0 00-4 4v20a4 4 0 004 4h16a4 4 0 004-4V24a4 4 0 00-4-4z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    <path d="M32 14L22 24l-4-4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                                <div className="flex text-xs text-gray-600 justify-center">
+                                                    <label htmlFor="file-upload" className="relative cursor-pointer bg-transparent rounded-md font-semibold text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                                        <span>ارفع الملف المرفق من جهازك</span>
+                                                        <input 
+                                                            id="file-upload" 
+                                                            name="file-upload" 
+                                                            type="file" 
+                                                            className="sr-only" 
+                                                            onChange={handleFileChange}
+                                                        />
+                                                    </label>
+                                                </div>
+                                                {attachment ? (
+                                                    <p className="text-xs text-emerald-600 font-semibold mt-1">📂 الملف المختار: {attachment.name}</p>
+                                                ) : (
+                                                    <p className="text-[10px] text-gray-400">مسموح بكافة صيغ الملفات والصور</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setActiveTab('list')}
+                                            className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition"
+                                            disabled={submitting}
+                                        >
+                                            إلغاء التعديل
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-semibold rounded-lg transition flex items-center gap-2"
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></span>
+                                                    جاري الإرسال...
+                                                </>
+                                            ) : (
+                                                "إرسال وتثبيت الطلب"
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+                    </main>
                 </div>
             );
-        };
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
 </html>
+
 
