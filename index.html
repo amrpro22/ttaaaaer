@@ -1,288 +1,42 @@
-اضف لي مي مربع تقرير شامل عن مستوى دخل الحاله
-ميزه تحميل ملف pdf للتقارير مع الاحتفاض بمربع الكتابه 
-اضف ميزه الاحتفاض بالملفات والتقارير لكل حاله في علامه تبويب باسم الحالات المرسله للاداره 
-واضف زر عند ارسال الحاله لنسخ رقم المتابعه 
-<!DOCTYPE html> 
+
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>صندوق الحالات الطارئة - نظام الصرف المتكامل</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تقديم طلب مساعدة - نظام الصرف</title>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
-    <!-- PDF Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
-        
-        * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
         body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
-            background: #f5f5f7;
-            margin: 0;
-            padding: 0;
+            font-family: 'IBM Plex Sans Arabic', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
         }
-
-        .ios-header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
-            backdrop-filter: blur(0px);
-            -webkit-backdrop-filter: blur(0px);
-            border-bottom: none;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .ios-card {
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
-            transition: none;
-            transform: none !important;
-        }
-        
-        .ios-card:active {
-            transform: none !important;
-        }
-
-        .ios-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 16px 0;
-        }
-        
-        .ios-stat-card {
-            background: #f8f9fc;
-            border-radius: 16px;
-            padding: 14px 12px;
-            text-align: center;
-            transform: none !important;
-        }
-        
-        .ios-stat-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: #8e8e93;
-            letter-spacing: -0.2px;
-            margin-bottom: 6px;
-        }
-        
-        .ios-stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1c1c1e;
-            letter-spacing: -0.5px;
-        }
-
-        .ios-progress {
-            background: #e9ecef;
-            border-radius: 6px;
-            height: 6px;
-            overflow: hidden;
-        }
-        
-        .ios-progress-fill {
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.3s ease;
-        }
-
-        .ios-button {
-            border-radius: 14px;
-            font-weight: 590;
-            transition: background 0.2s;
-            transform: none !important;
-        }
-        
-        .ios-button-primary {
-            background: #007aff;
-            color: white;
-        }
-        
-        .ios-button-primary:active {
-            background: #005fc1;
-            transform: none !important;
-        }
-        
-        .ios-button-secondary {
-            background: #e9ecef;
-            color: #1c1c1e;
-        }
-        
-        .ios-button-secondary:active {
-            background: #dee2e6;
-            transform: none !important;
-        }
-
-        .ios-fab {
-            background: #007aff;
-            border-radius: 30px;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-            transition: background 0.2s;
-            transform: none !important;
-        }
-        
-        .ios-fab:active {
-            background: #005fc1;
-            transform: none !important;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-        }
-
-        .ios-tab {
-            font-weight: 590;
-            transition: color 0.2s;
-            transform: none !important;
-        }
-        
-        .ios-tab-active {
-            color: #007aff;
-            border-bottom: 2px solid #007aff;
-            padding-bottom: 8px;
-        }
-
-        .ios-balance-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 16px 12px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: none !important;
-        }
-
-        .ios-search {
-            background: #f5f5f7;
-            border-radius: 12px;
-            border: none;
-            font-size: 16px;
-            padding: 14px 16px;
-        }
-        
-        .ios-search:focus {
-            outline: none;
-            background: #ffffff;
-            box-shadow: 0 0 0 2px #007aff20;
-        }
-
-        .ios-filter-pill {
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.2s;
-            transform: none !important;
-        }
-        
-        .ios-filter-pill-active {
-            background: #007aff;
-            color: white;
-        }
-        
-        .ios-filter-pill-inactive {
-            background: #e9ecef;
-            color: #6c6c70;
-        }
-
-        .ios-emergency-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: none;
-            transform: none !important;
-        }
-        
-        .ios-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        
-        .request-detail-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 10px 0;
-            border-bottom: 0.5px solid #e9ecef;
-        }
-        
-        .request-detail-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #8e8e93;
-            min-width: 100px;
-        }
-        
-        .request-detail-value {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1c1c1e;
-            flex: 1;
-            text-align: left;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        .user-badge {
-            background: rgba(255,255,255,0.2);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .btn-press:active { transform: scale(0.97); }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .status-pending { background: #fef3c7; border-right: 4px solid #f59e0b; }
+        .status-approved { background: #d1fae5; border-right: 4px solid #10b981; }
+        .status-rejected { background: #fee2e2; border-right: 4px solid #ef4444; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+        const { useState, useEffect } = React;
 
-        // Firebase Configs
+        // Firebase Config
         const firebaseConfig = {
-            apiKey: "AIzaSyBupAOs6diz9ET8lGnMdyKjS_cMS8sA2Uc",
-            authDomain: "amr4admin.firebaseapp.com",
-            projectId: "amr4admin",
-            storageBucket: "amr4admin.firebasestorage.app",
-            messagingSenderId: "177280788092",
-            appId: "1:177280788092:web:44f16c8f585a5b3e484bf9"
-        };
-
-        const rtConfig = {
             apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
             authDomain: "magdi-50c75.firebaseapp.com",
             databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com",
@@ -293,727 +47,457 @@
         };
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        let rtApp;
-        try { rtApp = firebase.app('rtApp'); } catch(e) { rtApp = firebase.initializeApp(rtConfig, 'rtApp'); }
-        const rtDb = firebase.database(rtApp);
-        const db = firebase.firestore();
+        const database = firebase.database();
         const auth = firebase.auth();
-        const APP_PATH = "amr4admin";
 
-        // ✅ TEAM MEMBERS - مجدي عبدة علي صلاحياته مشاهدة فقط
-        const teamMembers = [
-            { name: 'مصطفى الشجاع', role: 'المشرف العام', icon: '👑', password: '1992', permissions: ['all'] },
-            { name: 'مجدي عبدة علي', role: 'المدير المالي', icon: '💰', password: '2111', permissions: ['viewer'] },  // 🔴 مشاهدة فقط
-            { name: 'ياسر الشجاع', role: 'التدقيق وإدخال البيانات', icon: '✅', password: '1112', permissions: ['all'] },
-            { name: 'عمرو مسعد الشجاع', role: 'مطور النظام', icon: '💻', password: '1993', permissions: ['all'] }
+        // Types of cases
+        const caseTypes = [
+            { value: 'accident', label: ' حادث', icon: '' },
+            { value: 'disease', label: ' مرض', icon: '' },
+            { value: 'treatment', label: ' علاج', icon: '' },
+            { value: 'travelTreatment', label: ' سفر للعلاج', icon: '' },
+            { value: 'zakatCharity', label: ' صدقة من مال الزكاة', icon: '' },
+            { value: 'financialAid', label: ' مساعدة مالية', icon: '' },
+            { value: 'other', label: ' أخرى', icon: '' }
         ];
 
-        const calculateExpiryDate = (startDate, duration) => {
-            const start = new Date(startDate);
-            switch(duration) {
-                case '3 months': return new Date(start.setMonth(start.getMonth() + 3));
-                case '6 months': return new Date(start.setMonth(start.getMonth() + 6));
-                case '1 year': return new Date(start.setFullYear(start.getFullYear() + 1));
-                default: return new Date(start.setMonth(start.getMonth() + 3));
-            }
-        };
-
-        const getSubscriptionStatus = (expiryDate) => {
-            const now = new Date();
-            const expiry = new Date(expiryDate);
-            const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-            
-            if (now > expiry) return 'expired';
-            if (daysUntilExpiry <= 7) return 'expiring';
-            return 'active';
-        };
-
-        const validateSubscriptionData = (data) => {
-            if (!data.name || data.name.trim() === '') return false;
-            if (!data.totalAmount || parseFloat(data.totalAmount) <= 0) return false;
-            if (!data.paidAmount || parseFloat(data.paidAmount) < 0) return false;
-            if (parseFloat(data.paidAmount) > parseFloat(data.totalAmount)) return false;
-            return true;
-        };
-
         const App = () => {
-            const [allRecords, setAllRecords] = useState([]); 
-            const [filter, setFilter] = useState('all'); 
-            const [isModalOpen, setIsModalOpen] = useState(false);
-            const [editId, setEditId] = useState(null);
-            const [isPdfLoading, setIsPdfLoading] = useState(false);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [geoInfo, setGeoInfo] = useState({ location: 'تحديد...' });
-            const [activeTab, setActiveTab] = useState('emergency');
-            
-            const [currentUser, setCurrentUser] = useState(null);
-            const [showLogin, setShowLogin] = useState(true);
-            const [loginName, setLoginName] = useState('');
-            const [loginPassword, setLoginPassword] = useState('');
-            const [loginError, setLoginError] = useState('');
-            
-            const [assistanceRequests, setAssistanceRequests] = useState([]);
-            const [requestFilter, setRequestFilter] = useState('all');
-            const [showRequestForm, setShowRequestForm] = useState(false);
+            const [view, setView] = useState('form'); // 'form' or 'track'
             const [submittedRequest, setSubmittedRequest] = useState(null);
             const [trackingId, setTrackingId] = useState('');
+            const [trackedRequest, setTrackedRequest] = useState(null);
+            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
             
-            const [expensesList, setExpensesList] = useState([]);
-            const [expenseForm, setExpenseForm] = useState({
-                beneficiaryName: '', caseType: '', caseDetails: '', amount: '', currency: 'ريال يمني',
-                date: new Date().toISOString().split('T')[0], addedBy: ''
-            });
-            const [isExpenseLoading, setIsExpenseLoading] = useState(false);
-            const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-            
-            const [zakatForm, setZakatForm] = useState({ name: '', amount: '', currency: 'yer', recordedBy: '' });
-            const [editZakatId, setEditZakatId] = useState(null);
-            const [isZakatModalOpen, setIsZakatModalOpen] = useState(false);
-            const [form, setForm] = useState({ 
-                name: '', recordedBy: '', totalAmount: '', paidAmount: '', 
-                currency: 'sar', duration: '3 months', isPaidStatus: false,
-                startDate: new Date().toISOString().split('T')[0],
-                expiryDate: '',
-                subscriptionStatus: 'active'
-            });
-            
-            const [requestFormData, setRequestFormData] = useState({
-                caseName: '', caseDetails: '', caseType: '', requesterName: '',
-                requestDate: new Date().toISOString().split('T')[0], urgencyLevel: 'urgent',
-                incomeReport: '', status: 'pending', requestAmount: '', preferredCurrency: 'yer'
-            });
+            // Custom notification modal state
+            const [notification, setNotification] = useState(null);
 
-            const caseTypes = [
-                { value: 'accident', label: 'حادث', icon: '🚗' },
-                { value: 'disease', label: 'مرض', icon: '🏥' },
-                { value: 'treatment', label: 'علاج', icon: '💊' },
-                { value: 'travelTreatment', label: 'سفر للعلاج', icon: '✈️' },
-                { value: 'marriage', label: 'زواج', icon: '💑' },
-                { value: 'zakatCharity', label: 'صدقة زكاة', icon: '🕌' },
-                { value: 'financialAid', label: 'مساعدة مالية', icon: '💰' },
-                { value: 'other', label: 'أخرى', icon: '📌' }
-            ];
-
-            // ✅ دالة التحقق من صلاحية التعديل - مجدي فقط لا تظهر له الأزرار
-            const canEdit = () => {
-                return currentUser?.permissions?.includes('all') || false;
+            const showNotification = (message, type = 'success') => {
+                setNotification({ message, type });
             };
 
-            const handleLogin = () => {
-                const user = teamMembers.find(m => m.name === loginName && m.password === loginPassword);
-                if (user) {
-                    setCurrentUser(user);
-                    setShowLogin(false);
-                    setLoginError('');
-                    setForm(prev => ({ ...prev, recordedBy: user.name }));
-                    setZakatForm(prev => ({ ...prev, recordedBy: user.name }));
-                    setExpenseForm(prev => ({ ...prev, addedBy: user.name }));
-                } else {
-                    setLoginError('الاسم أو كلمة المرور غير صحيحة');
-                }
-            };
-
-            const handleLogout = () => {
-                setCurrentUser(null);
-                setShowLogin(true);
-                setLoginName('');
-                setLoginPassword('');
-            };
-
-            useEffect(() => {
-                const requestsRef = rtDb.ref('assistanceRequests');
-                const onRequestsChange = (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                        setAssistanceRequests(list);
-                    } else setAssistanceRequests([]);
-                };
-                requestsRef.on('value', onRequestsChange);
-                return () => requestsRef.off('value', onRequestsChange);
-            }, []);
-
-            useEffect(() => {
-                const expensesRef = rtDb.ref('expenses');
-                const onExpensesChange = (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                        list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                        setExpensesList(list);
-                    } else setExpensesList([]);
-                };
-                expensesRef.on('value', onExpensesChange);
-                return () => expensesRef.off('value', onExpensesChange);
-            }, []);
-
+            // Get location
             useEffect(() => {
                 fetch('https://ipapi.co/json/')
                     .then(res => res.json())
                     .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
-                    .catch(() => setGeoInfo({ location: 'السعودية/اليمن' }));
+                    .catch(() => setGeoInfo({ location: 'اليمن' }));
             }, []);
 
-            useEffect(() => { 
-                auth.signInAnonymously().catch(console.error); 
-            }, []);
-
+            // Anonymous auth
             useEffect(() => {
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                const unsubscribe = ref.onSnapshot(snap => {
-                    const records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const updatedRecords = records.map(record => {
-                        if (record.type !== 'zakat' && record.startDate && record.expiryDate) {
-                            const status = getSubscriptionStatus(record.expiryDate);
-                            if (record.subscriptionStatus !== status) {
-                                if (status === 'expired' && record.subscriptionStatus !== 'expired') {
-                                    ref.doc(record.id).update({ subscriptionStatus: status });
-                                }
-                                return { ...record, subscriptionStatus: status };
-                            }
-                        }
-                        return record;
-                    });
-                    setAllRecords(updatedRecords);
-                });
-                return () => unsubscribe();
+                auth.signInAnonymously().catch(console.error);
             }, []);
 
-            const donors = useMemo(() => allRecords.filter(record => !record.type || record.type !== 'zakat'), [allRecords]);
-            const zakatRecords = useMemo(() => allRecords.filter(record => record.type === 'zakat'), [allRecords]);
-
-            const parseInfo = useCallback((d) => {
-                if (d.startDate && d.expiryDate && d.totalAmount && d.paidAmount) {
-                    const total = parseFloat(d.totalAmount);
-                    const paid = parseFloat(d.paidAmount);
-                    let duration = d.duration || '3 months';
-                    let curr = d.currency || 'sar';
-                    const progress = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-                    let progressColor = progress >= 100 ? '#34c759' : (progress > 50 ? '#007aff' : (progress > 0 ? '#ff9500' : '#ff3b30'));
-                    let durationText = duration === '3 months' ? '3 أشهر' : duration === '6 months' ? '6 أشهر' : duration === '1 year' ? 'سنة' : 'غير محدد';
-                    const recordDate = d.startDate;
-                    const formattedDate = recordDate ? new Date(recordDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : 'تاريخ غير محدد';
-                    const status = d.subscriptionStatus || getSubscriptionStatus(d.expiryDate);
-                    
-                    let statusText = '';
-                    let statusColor = '';
-                    if (status === 'active') { statusText = 'نشط'; statusColor = '#34c759'; }
-                    else if (status === 'expiring') { statusText = 'ينتهي قريباً'; statusColor = '#ff9500'; }
-                    else if (status === 'expired') { statusText = 'منتهي'; statusColor = '#ff3b30'; }
-                    
-                    return { total, paid, remaining: Math.max(0, total - paid), curr, progress, progressColor, durationText, formattedDate, status, statusText, statusColor };
-                }
-                
-                const note = d.note || "";
-                const total = parseFloat((note.match(/T:(\d+(\.\d+)?)/) || [0, 0])[1]);
-                const paid = parseFloat((note.match(/P:(\d+(\.\d+)?)/) || [0, 0])[1]);
-                let duration = (note.match(/D:(3 months|6 months|1 year|none)/) || [0, 'none'])[1];
-                let curr = note.includes('C:USD') ? 'usd' : (note.includes('C:YER') ? 'yer' : 'sar');
-                const progress = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-                let progressColor = progress >= 100 ? '#34c759' : (progress > 50 ? '#007aff' : (progress > 0 ? '#ff9500' : '#ff3b30'));
-                let durationText = duration === '3 months' ? '3 أشهر' : duration === '6 months' ? '6 أشهر' : duration === '1 year' ? 'سنة' : 'غير محدد';
-                const recordDate = d.updatedAt || d.createdAt;
-                const formattedDate = recordDate ? new Date(recordDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : 'تاريخ غير محدد';
-                return { total, paid, remaining: Math.max(0, total - paid), curr, progress, progressColor, durationText, formattedDate, status: 'active', statusText: 'نشط', statusColor: '#34c759' };
-            }, []);
-
-            const donationsTotal = useMemo(() => {
-                const sums = { sar: 0, usd: 0, yer: 0 };
-                donors.forEach(d => { const info = parseInfo(d); sums[info.curr] += info.paid; });
-                return sums;
-            }, [donors, parseInfo]);
-
-            const zakatTotal = useMemo(() => {
-                const sums = { sar: 0, usd: 0, yer: 0 };
-                zakatRecords.forEach(r => { let curr = r.currency || 'yer'; sums[curr] += parseFloat(r.amount) || 0; });
-                return sums;
-            }, [zakatRecords]);
-            
-            const expensesTotal = useMemo(() => {
-                const sums = { 'ريال يمني': 0, 'ريال سعودي': 0, 'دولار': 0 };
-                expensesList.forEach(exp => sums[exp.currency || 'ريال يمني'] += parseFloat(exp.amount) || 0);
-                return sums;
-            }, [expensesList]);
-
-            const availableBalance = useMemo(() => ({
-                sar: Math.max(0, (donationsTotal.sar + zakatTotal.sar) - expensesTotal['ريال سعودي']),
-                usd: Math.max(0, (donationsTotal.usd + zakatTotal.usd) - expensesTotal['دولار']),
-                yer: Math.max(0, (donationsTotal.yer + zakatTotal.yer) - expensesTotal['ريال يمني'])
-            }), [donationsTotal, zakatTotal, expensesTotal]);
-
-            const filteredEmergencyList = useMemo(() => {
-                let list = [...donors].sort((a, b) => (b.startDate || b.updatedAt || 0) - (a.startDate || a.updatedAt || 0));
-                if (searchTerm) list = list.filter(d => d.name && d.name.includes(searchTerm));
-                return list.filter(d => {
-                    const info = parseInfo(d);
-                    if (filter === 'paid') return info.progress >= 100;
-                    if (filter === 'partial') return info.progress > 0 && info.progress < 100;
-                    if (filter === 'unpaid') return info.progress === 0;
-                    if (filter === 'expired') return info.status === 'expired';
-                    if (filter === 'active') return info.status === 'active';
-                    return true;
-                });
-            }, [donors, filter, searchTerm, parseInfo]);
-
-            const filteredRequests = useMemo(() => {
-                if (requestFilter === 'all') return assistanceRequests;
-                return assistanceRequests.filter(r => r.status === requestFilter);
-            }, [assistanceRequests, requestFilter]);
-
-            const submitAssistanceRequest = async (e) => {
-                e.preventDefault();
-                if (!requestFormData.caseName || !requestFormData.requesterName || !requestFormData.caseType) {
-                    alert('الرجاء تعبئة جميع الحقول المطلوبة');
-                    return;
-                }
-                const amount = parseFloat(requestFormData.requestAmount);
-                if (isNaN(amount) || amount <= 0) {
-                    alert('الرجاء إدخال مبلغ صحيح');
-                    return;
-                }
-                try {
-                    const newRequestRef = rtDb.ref('assistanceRequests').push();
-                    await newRequestRef.set({ 
-                        ...requestFormData, 
-                        requestId: newRequestRef.key, 
-                        location: geoInfo.location, 
-                        status: 'pending', 
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        requestAmount: amount,
-                        submittedBy: currentUser?.name || 'غير محدد'
-                    });
-                    setSubmittedRequest({ id: newRequestRef.key, status: 'pending' });
-                    setShowRequestForm(false);
-                    setRequestFormData({ caseName: '', caseDetails: '', caseType: '', requesterName: '', requestDate: new Date().toISOString().split('T')[0], urgencyLevel: 'urgent', incomeReport: '', status: 'pending', requestAmount: '', preferredCurrency: 'yer' });
-                } catch (error) { 
-                    console.error(error);
-                    alert('حدث خطأ في إرسال الطلب'); 
-                }
-            };
-
-            const updateRequestStatus = async (requestId, newStatus) => {
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لتعديل الطلبات");
-                try {
-                    await rtDb.ref(`assistanceRequests/${requestId}`).update({ status: newStatus, reviewedAt: firebase.database.ServerValue.TIMESTAMP, reviewedBy: currentUser?.name });
-                    alert(`✅ تم ${newStatus === 'approved' ? 'قبول' : 'رفض'} الطلب بنجاح`);
-                } catch (error) { 
-                    console.error(error);
-                    alert('حدث خطأ'); 
-                }
-            };
-
-            const deleteRequest = async (requestId) => {
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لحذف الطلبات");
-                if (confirm('⚠️ هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.')) {
-                    try {
-                        await rtDb.ref(`assistanceRequests/${requestId}`).remove();
-                        alert('✅ تم حذف الطلب بنجاح');
-                    } catch (error) { 
-                        console.error(error);
-                        alert('حدث خطأ في حذف الطلب'); 
-                    }
-                }
-            };
-
-            const checkRequestStatus = async () => {
-                if (!trackingId) return;
-                try {
-                    const snapshot = await rtDb.ref(`assistanceRequests/${trackingId}`).once('value');
-                    const data = snapshot.val();
-                    if (data) setSubmittedRequest({ id: trackingId, status: data.status });
-                    else alert('لم يتم العثور على الطلب');
-                } catch (error) {
-                    console.error(error);
-                    alert('حدث خطأ');
-                }
-            };
-
-            const handleSave = async (e) => {
-                e.preventDefault();
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية للإضافة أو التعديل");
-                
-                if (!validateSubscriptionData(form)) {
-                    alert('الرجاء التأكد من صحة البيانات: الاسم مطلوب، المبلغ الإجمالي أكبر من 0، والمبلغ المدفوع لا يتجاوز الإجمالي');
-                    return;
-                }
-                
-                const now = Date.now();
-                const startDate = form.startDate || new Date().toISOString().split('T')[0];
-                const expiryDate = calculateExpiryDate(startDate, form.duration);
-                const subscriptionStatus = getSubscriptionStatus(expiryDate);
-                
-                const data = { 
-                    name: form.name, 
-                    recordedBy: currentUser.name,
-                    ip: geoInfo.location, 
-                    location: geoInfo.location,
-                    startDate: startDate,
-                    expiryDate: expiryDate.toISOString(),
-                    duration: form.duration,
-                    totalAmount: parseFloat(form.totalAmount),
-                    paidAmount: parseFloat(form.paidAmount),
-                    currency: form.currency,
-                    subscriptionStatus: subscriptionStatus,
-                    updatedAt: now,
-                    entryLocation: geoInfo.location, 
-                    dataEntryName: currentUser.name
-                };
-                
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                
-                try {
-                    if (editId) {
-                        await ref.doc(editId).update(data);
-                    } else {
-                        await ref.add({ ...data, createdAt: now });
-                    }
-                    closeModal();
-                } catch (error) { 
-                    console.error(error);
-                    alert("خطأ في الحفظ"); 
-                }
-            };
-
-            const handleSaveZakat = async (e) => {
-                e.preventDefault();
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لإضافة الزكاة");
-                
-                const amount = parseFloat(zakatForm.amount);
-                if (isNaN(amount) || amount <= 0) {
-                    alert('الرجاء إدخال مبلغ صحيح');
-                    return;
-                }
-                if (!zakatForm.name || zakatForm.name.trim() === '') {
-                    alert('الرجاء إدخال الاسم');
-                    return;
-                }
-                const ref = db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors');
-                try {
-                    if (editZakatId) {
-                        await ref.doc(editZakatId).update({ ...zakatForm, recordedBy: currentUser.name, type: 'zakat', updatedAt: Date.now() });
-                    } else {
-                        await ref.add({ ...zakatForm, recordedBy: currentUser.name, type: 'zakat', createdAt: Date.now(), ip: geoInfo.location, location: geoInfo.location });
-                    }
-                    closeZakatModal();
-                } catch (error) {
-                    console.error(error);
-                    alert('حدث خطأ');
-                }
-            };
-            
-            const handleSaveExpense = async (e) => {
-                e.preventDefault();
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لتسجيل الصرف");
-                
-                let balanceAmount = { 'ريال سعودي': availableBalance.sar, 'دولار': availableBalance.usd, 'ريال يمني': availableBalance.yer }[expenseForm.currency];
-                const amountToWithdraw = parseFloat(expenseForm.amount);
-                if (isNaN(amountToWithdraw) || amountToWithdraw <= 0) return alert("مبلغ غير صحيح");
-                if (amountToWithdraw > balanceAmount) return alert(`⚠️ رصيد غير كافٍ! الرصيد المتاح: ${balanceAmount.toLocaleString()}`);
-                if (!expenseForm.beneficiaryName || expenseForm.beneficiaryName.trim() === '') return alert("الرجاء إدخال اسم المستفيد");
-                
-                setIsExpenseLoading(true);
-                try {
-                    await rtDb.ref('expenses').push().set({ 
-                        ...expenseForm, 
-                        amount: amountToWithdraw, 
-                        timestamp: firebase.database.ServerValue.TIMESTAMP, 
-                        entryLocation: geoInfo.location,
-                        addedBy: currentUser.name
-                    });
-                    setIsExpenseModalOpen(false);
-                    setExpenseForm({ beneficiaryName: '', caseType: '', caseDetails: '', amount: '', currency: 'ريال يمني', date: new Date().toISOString().split('T')[0], addedBy: currentUser.name });
-                    alert(`✅ تم تسجيل الصرف بنجاح!`);
-                } catch (error) {
-                    console.error(error);
-                    alert('حدث خطأ');
-                } finally { setIsExpenseLoading(false); }
-            };
-            
-            const deleteExpense = async (id) => { 
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لحذف الصرف");
-                if (confirm("حذف طلب الصرف؟")) {
-                    try {
-                        await rtDb.ref(`expenses/${id}`).remove();
-                    } catch (error) {
-                        console.error(error);
-                        alert('حدث خطأ');
-                    }
-                }
-            };
-            
-            const deleteZakatRecord = async (id) => { 
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لحذف سجل الزكاة");
-                if (confirm("حذف سجل الزكاة؟")) {
-                    try {
-                        await db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors').doc(id).delete();
-                    } catch (error) {
-                        console.error(error);
-                        alert('حدث خطأ');
-                    }
-                }
-            };
-            
-            const deleteEmergencyRecord = async (id) => { 
-                if (!canEdit()) return alert("⚠️ ليس لديك صلاحية لحذف السجل");
-                if (confirm("حذف السجل؟")) {
-                    try {
-                        await db.collection('artifacts').doc(APP_PATH).collection('public').doc('data').collection('donors').doc(id).delete();
-                    } catch (error) {
-                        console.error(error);
-                        alert('حدث خطأ');
-                    }
-                }
-            };
-
-            const closeModal = () => { 
-                setIsModalOpen(false); 
-                setEditId(null); 
-                setForm({ 
-                    name: '', recordedBy: currentUser?.name || '', totalAmount: '', paidAmount: '', 
-                    currency: 'sar', duration: '3 months', isPaidStatus: false,
-                    startDate: new Date().toISOString().split('T')[0],
-                    expiryDate: '',
-                    subscriptionStatus: 'active'
-                }); 
-            };
-            
-            const closeZakatModal = () => { 
-                setIsZakatModalOpen(false); 
-                setEditZakatId(null); 
-                setZakatForm({ name: '', amount: '', currency: 'yer', recordedBy: currentUser?.name || '' }); 
-            };
-
-            const generatePDF = async () => {
-                setIsPdfLoading(true);
-                try {
-                    const pdfContainer = document.createElement('div');
-                    pdfContainer.style.position = 'absolute';
-                    pdfContainer.style.left = '-9999px';
-                    pdfContainer.style.top = '0';
-                    pdfContainer.style.width = '800px';
-                    pdfContainer.style.background = 'white';
-                    pdfContainer.style.direction = 'rtl';
-                    pdfContainer.style.padding = '30px';
-                    pdfContainer.style.fontFamily = 'Inter, sans-serif';
-                    pdfContainer.style.height = 'auto';
-                    
-                    let emergencyRows = '';
-                    if (donors && donors.length > 0) {
-                        donors.forEach((d, index) => {
-                            const info = parseInfo(d);
-                            const dataEntry = d.dataEntryName || d.recordedBy || 'غير محدد';
-                            emergencyRows += `<tr style="border-bottom: 1px solid #e9ecef;"><td style="padding: 12px;"><strong>${d.name || 'بدون اسم'}</strong><br/><span style="font-size: 10px; color: #8e8e93;">📍 ${d.location || 'غير محدد'}</span><br/><span style="font-size: 10px; color: #8e8e93;">👤 ${dataEntry}</span><br/><span style="font-size: 10px; color: ${info.statusColor};">${info.statusText}</span></td><td style="padding: 12px; text-align: center;">${info.total.toLocaleString()} ${info.curr.toUpperCase()}</td><td style="padding: 12px; text-align: center;">${info.paid.toLocaleString()} ${info.curr.toUpperCase()}</td><td style="padding: 12px; text-align: center;">${info.remaining.toLocaleString()} ${info.curr.toUpperCase()}</td><td style="padding: 12px; text-align: center;">${info.progress}%</td><td style="padding: 12px; text-align: center;">${info.formattedDate}</td></tr>`;
-                        });
-                    } else {
-                        emergencyRows = '<tr><td colspan="6" style="padding: 20px; text-align: center;">لا توجد بيانات</td></tr>';
-                    }
-                    
-                    let zakatRows = '';
-                    if (zakatRecords && zakatRecords.length > 0) {
-                        zakatRecords.forEach((z, idx) => {
-                            zakatRows += `<tr style="border-bottom: 1px solid #e9ecef;"><td style="padding: 12px;"><strong>${z.name}</strong><br/><span style="font-size: 10px; color: #8e8e93;">👤 ${z.recordedBy}</span></td><td style="padding: 12px; text-align: center;">${parseFloat(z.amount).toLocaleString()} ${z.currency === 'sar' ? 'ر.س' : z.currency === 'usd' ? '$' : 'ي.ي'}</td><td style="padding: 12px; text-align: center;">${z.location || 'غير محدد'}</td></tr>`;
-                        });
-                    } else {
-                        zakatRows = '<tr><td colspan="3" style="padding: 20px; text-align: center;">لا توجد بيانات</td></tr>';
-                    }
-                    
-                    let expensesRows = '';
-                    if (expensesList && expensesList.length > 0) {
-                        expensesList.forEach((exp, idx) => {
-                            expensesRows += `<tr style="border-bottom: 1px solid #e9ecef;"><td style="padding: 12px;"><strong>${exp.beneficiaryName}</strong><br/><span style="font-size: 10px; color: #8e8e93;">${exp.caseType || 'غير محدد'}</span></td><td style="padding: 12px; text-align: center;">${parseFloat(exp.amount).toLocaleString()} ${exp.currency}</td><td style="padding: 12px; text-align: center;">${exp.date}</td><td style="padding: 12px;">${exp.caseDetails || 'لا توجد تفاصيل'}</td></tr>`;
-                        });
-                    } else {
-                        expensesRows = '<tr><td colspan="4" style="padding: 20px; text-align: center;">لا توجد بيانات</td></tr>';
-                    }
-                    
-                    let requestsRows = '';
-                    if (assistanceRequests && assistanceRequests.length > 0) {
-                        assistanceRequests.forEach((req, idx) => {
-                            requestsRows += `<tr style="border-bottom: 1px solid #e9ecef;"><td style="padding: 12px;"><strong>${req.caseName}</strong><br/><span style="font-size: 10px; color: #8e8e93;">👤 ${req.requesterName}</span><br/><span style="font-size: 10px; color: #8e8e93;">🆔 ${req.id?.slice(-8)}</span></td><td style="padding: 12px;">${caseTypes.find(t=>t.value===req.caseType)?.label || req.caseType}</td><td style="padding: 12px; text-align: center;">${parseFloat(req.requestAmount || 0).toLocaleString()} ${req.preferredCurrency === 'sar' ? 'ر.س' : req.preferredCurrency === 'usd' ? '$' : 'ي.ي'}</td><td style="padding: 12px; text-align: center;">${req.status === 'pending' ? '⏳ قيد المراجعة' : req.status === 'approved' ? '✅ مقبول' : '❌ مرفوض'}</td><td style="padding: 12px; text-align: center;">${req.requestDate}</td><td style="padding: 12px;">${req.caseDetails?.substring(0, 80) || ''}${req.caseDetails?.length > 80 ? '...' : ''}</td></tr>`;
-                        });
-                    } else {
-                        requestsRows = '<tr><td colspan="6" style="padding: 20px; text-align: center;">لا توجد طلبات</td></tr>';
-                    }
-                    
-                    const currentDate = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-                    
-                    pdfContainer.innerHTML = `
-                        <div style="padding: 20px;">
-                            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007aff; padding-bottom: 20px;">
-                                <div style="font-size: 24px; font-weight: 800; color: #1c1c1e;">📋 تقرير صندوق الحالات الطارئة</div>
-                                <div style="font-size: 12px; color: #8e8e93; margin-top: 5px;">نظام الصرف المتكامل - تقرير شامل</div>
-                                <div style="font-size: 11px; color: #8e8e93;">تاريخ التقرير: ${currentDate}</div>
-                                <div style="font-size: 10px; color: #007aff; margin-top: 10px;">تم التصدير بواسطة: ${currentUser?.name} (${currentUser?.role})</div>
+            return (
+                <div className="min-h-screen py-8 px-4">
+                    <div className="max-w-2xl mx-auto">
+                        
+                        {/* Custom Notification Toast */}
+                        {notification && (
+                            <div className="fixed top-4 left-4 right-4 z-50 flex justify-center pointer-events-none fade-in">
+                                <div className={`px-6 py-4 rounded-2xl shadow-2xl text-white font-bold flex items-center gap-3 max-w-md pointer-events-auto ${
+                                    notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'
+                                }`}>
+                                    <span>{notification.type === 'error' ? '⚠️' : '✨'}</span>
+                                    <span>{notification.message}</span>
+                                    <button 
+                                        onClick={() => setNotification(null)}
+                                        className="mr-auto text-white/80 hover:text-white font-normal"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 30px;"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #007aff;">💰 إجمالي الأرصدة</h3><table style="width: 100%; border-collapse: collapse; background: #f8f9fc; border-radius: 12px;"><thead><tr style="background: #e9ecef;"><th style="padding: 12px; text-align: center;">العملة</th><th style="padding: 12px; text-align: center;">الرصيد المتاح</th><th style="padding: 12px; text-align: center;">إجمالي الإيرادات</th><th style="padding: 12px; text-align: center;">إجمالي المصروفات</th></tr></thead><tbody><tr><td style="padding: 10px; text-align: center;">🇸🇦 ريال سعودي</td><td style="padding: 10px; text-align: center;"><strong>${(availableBalance.sar || 0).toLocaleString()}</strong></td><td style="padding: 10px; text-align: center;">${((donationsTotal.sar || 0) + (zakatTotal.sar || 0)).toLocaleString()}</td><td style="padding: 10px; text-align: center;">${(expensesTotal['ريال سعودي'] || 0).toLocaleString()}</td></tr><tr><td style="padding: 10px; text-align: center;">🇺🇸 دولار</td><td style="padding: 10px; text-align: center;"><strong>${(availableBalance.usd || 0).toLocaleString()}</strong></td><td style="padding: 10px; text-align: center;">${((donationsTotal.usd || 0) + (zakatTotal.usd || 0)).toLocaleString()}</td><td style="padding: 10px; text-align: center;">${(expensesTotal['دولار'] || 0).toLocaleString()}</td></tr><tr><td style="padding: 10px; text-align: center;">🇾🇪 ريال يمني</td><td style="padding: 10px; text-align: center;"><strong>${(availableBalance.yer || 0).toLocaleString()}</strong></td><td style="padding: 10px; text-align: center;">${((donationsTotal.yer || 0) + (zakatTotal.yer || 0)).toLocaleString()}</td><td style="padding: 10px; text-align: center;">${(expensesTotal['ريال يمني'] || 0).toLocaleString()}</td></tr></tbody></table></div>
-                            <div style="margin-bottom: 30px;"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #007aff;">🏥 حالات الطوارئ (${donors.length})</h3><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fc;"><th style="padding: 12px; text-align: right;">اسم الحالة</th><th style="padding: 12px; text-align: center;">المبلغ الكلي</th><th style="padding: 12px; text-align: center;">المدفوع</th><th style="padding: 12px; text-align: center;">المتبقي</th><th style="padding: 12px; text-align: center;">النسبة</th><th style="padding: 12px; text-align: center;">التاريخ</th></tr></thead><tbody>${emergencyRows}</tbody></table></div>
-                            <div style="margin-bottom: 30px;"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #007aff;">🕌 الزكاة (${zakatRecords.length})</h3><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fc;"><th style="padding: 12px; text-align: right;">المتبرع</th><th style="padding: 12px; text-align: center;">المبلغ</th><th style="padding: 12px; text-align: center;">الموقع</th></tr></thead><tbody>${zakatRows}</tbody></table></div>
-                            <div style="margin-bottom: 30px;"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #007aff;">💰 طلبات الصرف (${expensesList.length})</h3><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fc;"><th style="padding: 12px; text-align: right;">المستفيد</th><th style="padding: 12px; text-align: center;">المبلغ</th><th style="padding: 12px; text-align: center;">التاريخ</th><th style="padding: 12px; text-align: right;">التفاصيل</th></tr></thead><tbody>${expensesRows}</tbody></table></div>
-                            <div><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #007aff;">📝 طلبات المساعدة (${assistanceRequests.length})</h3><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fc;"><th style="padding: 12px; text-align: right;">اسم الحالة</th><th style="padding: 12px; text-align: right;">النوع</th><th style="padding: 12px; text-align: center;">المبلغ</th><th style="padding: 12px; text-align: center;">الحالة</th><th style="padding: 12px; text-align: center;">التاريخ</th><th style="padding: 12px; text-align: right;">التفاصيل</th></tr></thead><tbody>${requestsRows}</tbody></table></div>
-                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center; font-size: 10px; color: #8e8e93;"><p>تم إنشاء هذا التقرير بواسطة نظام صندوق الحالات الطارئة</p><p>جميع الحقوق محفوظة © 2024</p></div>
+                        )}
+
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-block p-4 bg-white/20 backdrop-blur rounded-full mb-4">
+                                <span className="text-5xl">📝</span>
+                            </div>
+                            <h1 className="text-3xl font-bold text-white">تقديم طلب مساعدة</h1>
+                            <p className="text-white/80 mt-2">نظام الصرف المتكامل - صندوق الحالات الطارئة</p>
                         </div>
-                    `;
+
+                        {/* Toggle Buttons */}
+                        <div className="flex gap-3 mb-6">
+                            <button 
+                                onClick={() => { setView('form'); setSubmittedRequest(null); }}
+                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
+                            >
+                                📝 تقديم طلب جديد
+                            </button>
+                            <button 
+                                onClick={() => { setView('track'); setTrackedRequest(null); }}
+                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-white text-purple-600 shadow-lg' : 'bg-white/20 text-white'}`}
+                            >
+                                🔍 متابعة طلب
+                            </button>
+                        </div>
+
+                        {/* Request Form */}
+                        {view === 'form' && !submittedRequest && (
+                            <RequestForm 
+                                onSubmit={(requestId) => setSubmittedRequest({ id: requestId, status: 'pending' })} 
+                                geoInfo={geoInfo} 
+                                caseTypes={caseTypes} 
+                                showNotification={showNotification}
+                            />
+                        )}
+                        
+                        {/* Submission Result */}
+                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} />}
+                        
+                        {/* Track Request */}
+                        {view === 'track' && (
+                            <TrackRequest 
+                                trackingId={trackingId} 
+                                setTrackingId={setTrackingId} 
+                                trackedRequest={trackedRequest} 
+                                setTrackedRequest={setTrackedRequest} 
+                                showNotification={showNotification}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Request Form Component
+        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification }) => {
+            const [formData, setFormData] = useState({
+                caseName: '',
+                caseDetails: '',
+                caseType: '',
+                requesterName: '',
+                requestDate: new Date().toISOString().split('T')[0],
+                urgencyLevel: 'urgent',
+                incomeReport: '',
+                requestAmount: '',
+                preferredCurrency: 'yer'
+            });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                
+                try {
+                    const newRequestRef = database.ref('assistanceRequests').push();
+                    const requestId = newRequestRef.key;
                     
-                    document.body.appendChild(pdfContainer);
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    const canvas = await html2canvas(pdfContainer, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 800, height: pdfContainer.scrollHeight, windowHeight: pdfContainer.scrollHeight });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                    const imgWidth = pdf.internal.pageSize.getWidth();
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    let heightLeft = imgHeight;
-                    let position = 0;
-                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pdf.internal.pageSize.getHeight();
-                    while (heightLeft > 0) {
-                        position = heightLeft - imgHeight;
-                        pdf.addPage();
-                        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                        heightLeft -= pdf.internal.pageSize.getHeight();
-                    }
-                    pdf.save(`تقرير_صندوق_الطوارئ_${Date.now()}.pdf`);
-                    document.body.removeChild(pdfContainer);
+                    await newRequestRef.set({
+                        ...formData,
+                        requestId: requestId,
+                        location: geoInfo.location,
+                        status: 'pending',
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    showNotification('تم إرسال طلبك بنجاح!');
+                    onSubmit(requestId);
                 } catch (error) {
                     console.error(error);
-                    alert('حدث خطأ في إنشاء التقرير: ' + error.message);
+                    showNotification('حدث خطأ في إرسال الطلب، يرجى المحاولة لاحقاً', 'error');
                 } finally {
-                    setIsPdfLoading(false);
+                    setIsSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم الحالة *</label>
+                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.caseName} onChange={(e) => setFormData({...formData, caseName: e.target.value})}
+                                    placeholder="مثال: حالة عائلة أحمد" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">اسم مقدم الحالة *</label>
+                                <input type="text" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requesterName} onChange={(e) => setFormData({...formData, requesterName: e.target.value})}
+                                    placeholder="الاسم الكامل" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">نوع الحالة *</label>
+                            <select required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.caseType} onChange={(e) => setFormData({...formData, caseType: e.target.value})}>
+                                <option value="">اختر نوع الحالة</option>
+                                {caseTypes.map(type => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">تفاصيل شاملة عن الحالة *</label>
+                            <textarea required rows="5" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.caseDetails} onChange={(e) => setFormData({...formData, caseDetails: e.target.value})}
+                                placeholder="اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..."></textarea>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">تقرير شامل عن مستوى دخل الحالة *</label>
+                            <textarea required rows="4" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                value={formData.incomeReport} onChange={(e) => setFormData({...formData, incomeReport: e.target.value})}
+                                placeholder="صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..."></textarea>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ المطلوب</label>
+                                <input type="number" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requestAmount} onChange={(e) => setFormData({...formData, requestAmount: e.target.value})}
+                                    placeholder="المبلغ" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">العملة</label>
+                                <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.preferredCurrency} onChange={(e) => setFormData({...formData, preferredCurrency: e.target.value})}>
+                                    <option value="yer">🇾🇪 ريال يمني</option>
+                                    <option value="sar">🇸🇦 ريال سعودي</option>
+                                    <option value="usd">🇺🇸 دولار</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">التاريخ *</label>
+                                <input type="date" required className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none" 
+                                    value={formData.requestDate} onChange={(e) => setFormData({...formData, requestDate: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">مستوى تقديم الطلب *</label>
+                                <div className="flex gap-4 pt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" value="urgent" checked={formData.urgencyLevel === 'urgent'} 
+                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
+                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">🚨 مستعجل</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" value="notUrgent" checked={formData.urgencyLevel === 'notUrgent'} 
+                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">✅ غير مستعجل</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-500">
+                            📍 موقع التقديم الحالي: {geoInfo.location}
+                        </div>
+
+                        <button type="submit" disabled={isSubmitting} 
+                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg transition-all hover:shadow-xl btn-press disabled:opacity-50">
+                            {isSubmitting ? 'جاري الإرسال...' : '📤 إرسال الطلب'}
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        // Submission Result Component
+        const SubmissionResult = ({ request, onNewRequest }) => {
+            const [currentStatus, setCurrentStatus] = useState(request.status);
+            
+            useEffect(() => {
+                const statusRef = database.ref(`assistanceRequests/${request.id}/status`);
+                const unsubscribe = statusRef.on('value', (snapshot) => {
+                    const status = snapshot.val();
+                    if (status) setCurrentStatus(status);
+                });
+                return () => statusRef.off();
+            }, [request.id]);
+
+            const getStatusContent = () => {
+                switch(currentStatus) {
+                    case 'pending':
+                        return {
+                            icon: '⏳',
+                            title: 'قيد المراجعة',
+                            color: 'text-yellow-600',
+                            bg: 'bg-yellow-100',
+                            message: 'تم استلام طلبك بنجاح، وهو قيد المراجعة من قبل الفريق المسؤول'
+                        };
+                    case 'approved':
+                        return {
+                            icon: '✅',
+                            title: 'تمت الموافقة على الطلب',
+                            color: 'text-green-600',
+                            bg: 'bg-green-100',
+                            message: 'تمت الموافقة على طلبك، سيتم التواصل معك قريباً'
+                        };
+                    case 'rejected':
+                        return {
+                            icon: '❌',
+                            title: 'تم رفض الطلب',
+                            color: 'text-red-600',
+                            bg: 'bg-red-100',
+                            message: 'نأسف لرفض طلبك، يمكنك التواصل مع الإدارة لمعرفة الأسباب'
+                        };
+                    default:
+                        return {
+                            icon: '⏳',
+                            title: 'قيد المراجعة',
+                            color: 'text-yellow-600',
+                            bg: 'bg-yellow-100',
+                            message: 'جاري مراجعة طلبك'
+                        };
+                }
+            };
+
+            const statusContent = getStatusContent();
+
+            return (
+                <div className="bg-white rounded-3xl shadow-2xl p-8 text-center fade-in">
+                    <div className={`inline-block p-4 ${statusContent.bg} rounded-full mb-6`}>
+                        <span className="text-6xl">{statusContent.icon}</span>
+                    </div>
+                    
+                    <h2 className={`text-2xl font-bold ${statusContent.color} mb-4`}>{statusContent.title}</h2>
+                    
+                    <p className="text-gray-600 mb-6">{statusContent.message}</p>
+                    
+                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                        <p className="text-sm text-gray-500 mb-2">رقم الطلب المرجعي:</p>
+                        <p className="text-lg font-mono font-bold text-purple-600 selection:bg-purple-200">{request.id}</p>
+                        <p className="text-xs text-gray-400 mt-3">⚠️ احتفظ بهذا الرقم لمتابعة طلبك</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button onClick={onNewRequest} 
+                            className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold btn-press">
+                            تقديم طلب جديد
+                        </button>
+                        <button onClick={() => window.location.reload()} 
+                            className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold btn-press">
+                            الصفحة الرئيسية
+                        </button>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t">
+                        <p className="text-xs text-gray-400">
+                            سيتم تحديث حالة الطلب تلقائياً عند المراجعة
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // Track Request Component
+        const TrackRequest = ({ trackingId, setTrackingId, trackedRequest, setTrackedRequest, showNotification }) => {
+            const [isLoading, setIsLoading] = useState(false);
+
+            const checkStatus = async () => {
+                if (!trackingId.trim()) {
+                    showNotification('الرجاء إدخال رقم الطلب أولاً', 'error');
+                    return;
+                }
+                setIsLoading(true);
+                
+                const requestRef = database.ref(`assistanceRequests/${trackingId.trim()}`);
+                requestRef.once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setTrackedRequest({ id: trackingId.trim(), ...data });
+                        showNotification('تم العثور على الطلب بنجاح!');
+                    } else {
+                        showNotification('لم يتم العثور على الرقم المرجعي للطلب', 'error');
+                        setTrackedRequest(null);
+                    }
+                    setIsLoading(false);
+                });
+            };
+
+            const getStatusDisplay = (status) => {
+                switch(status) {
+                    case 'pending': return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
+                    case 'approved': return { text: '✅ تمت الموافقة', bg: 'status-approved' };
+                    case 'rejected': return { text: '❌ تم الرفض', bg: 'status-rejected' };
+                    default: return { text: '⏳ قيد المراجعة', bg: 'status-pending' };
                 }
             };
 
             const getCaseTypeLabel = (typeValue) => {
-                const found = caseTypes.find(t => t.value === typeValue);
-                return found ? found.label : typeValue;
+                const types = {
+                    'accident': '🚗 حادث', 'disease': '🏥 مرض', 'treatment': '💊 علاج',
+                    'travelTreatment': '✈️ سفر للعلاج', 'marriage': '💑 زواج',
+                    'zakatCharity': '🕌 صدقة زكاة', 'financialAid': '💰 مساعدة مالية', 'other': '📌 أخرى'
+                };
+                return types[typeValue] || typeValue;
             };
 
-            if (showLogin) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f7' }}>
-                        <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-xl">
-                            <div className="text-center mb-6"><div className="text-5xl mb-3">🔐</div><h2 className="text-2xl font-bold text-black">تسجيل الدخول</h2><p className="text-[#8e8e93] text-sm mt-1">نظام صندوق الحالات الطارئة</p></div>
-                            {loginError && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm text-center mb-4">{loginError}</div>}
-                            <div className="space-y-4">
-                                <div><label className="block text-sm font-medium text-[#6c6c70] mb-1">الاسم</label><select value={loginName} onChange={e => setLoginName(e.target.value)} className="w-full p-3 border rounded-xl bg-white"><option value="">اختر اسم المستخدم</option>{teamMembers.map(member => (<option key={member.name} value={member.name}>{member.icon} {member.name} - {member.role}</option>))}</select></div>
-                                <div><label className="block text-sm font-medium text-[#6c6c70] mb-1">كلمة المرور</label><input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleLogin()} placeholder="أدخل كلمة المرور" className="w-full p-3 border rounded-xl" /></div>
-                                <button onClick={handleLogin} className="w-full ios-button ios-button-primary py-3 rounded-xl font-medium mt-4">تسجيل الدخول</button>
-                            </div>
-                            <div className="mt-6 pt-4 border-t text-center"><p className="text-[10px] text-[#8e8e93]">تطوير: عمرو مسعد الشجاع</p></div>
-                        </div>
-                    </div>
-                );
-            }
-
             return (
-                <div className="min-h-screen" style={{ background: '#f5f5f7' }}>
-                    <div className="ios-header px-4 py-4 shadow-lg">
-                        <div className="max-w-[480px] mx-auto">
-                            <div className="flex justify-between items-center mb-2">
-                                <div><h1 className="text-xl font-bold text-white">صندوق دعم الحالات الطارئة - محبران</h1></div>
-                                <div className="flex gap-2">
-                                    <button onClick={generatePDF} disabled={isPdfLoading} className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${isPdfLoading ? 'bg-white/30 text-white' : 'bg-white/20 text-white'}`}>{isPdfLoading ? '⌛ جاري...' : '📄 PDF'}</button>
-                                    <button onClick={handleLogout} className="px-3 py-2 rounded-full text-xs font-medium bg-red-500/70 text-white hover:bg-red-500/90">🚪 خروج</button>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                <div className="user-badge"><span>{currentUser?.icon}</span><span className="font-medium text-white">{currentUser?.name}</span><span className="text-white/70 text-[9px] mr-1">({currentUser?.role})</span></div>
-                                <div className="bg-green-500/30 rounded-full px-3 py-1 text-[10px] text-white">{canEdit() ? '👑 صلاحيات كاملة' : '👁️ مشاهدة فقط'}</div>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-3xl shadow-2xl p-6 fade-in">
+                    <h3 className="text-lg font-bold mb-4 text-center text-gray-800">🔍 متابعة طلب مساعدة</h3>
+                    
+                    <div className="flex gap-3 mb-6">
+                        <input type="text" 
+                            placeholder="أدخل رقم الطلب" 
+                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-left"
+                            dir="ltr"
+                            value={trackingId} 
+                            onChange={(e) => setTrackingId(e.target.value)} />
+                        <button onClick={checkStatus} disabled={isLoading}
+                            className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[80px]">
+                            {isLoading ? 'جاري...' : 'بحث'}
+                        </button>
                     </div>
 
-                    <div className="max-w-[480px] mx-auto px-4 py-4 pb-28">
-                        <div className="flex gap-1 mb-6 border-b border-[#c6c6c8]/30 pb-2">
-                            {[
-                                { id: 'emergency', label: 'المساهمات', icon: '💵' },
-                                { id: 'zakat', label: 'الزكاة', icon: '🕌' },
-                                { id: 'withdrawal', label: 'الصرف', icon: '💰' },
-                                { id: 'requests', label: 'الطلبات', icon: '📝' }
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 text-sm font-medium transition-all ios-tab ${activeTab === tab.id ? 'ios-tab-active text-[#007aff]' : 'text-[#8e8e93]'}`}><span className="ml-1">{tab.icon}</span> {tab.label}</button>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-3 mb-6">
-                            <div className="ios-balance-card"><p className="text-white/80 text-[10px] font-medium">🇸🇦 المتاح</p><p className="text-white text-xl font-bold">{availableBalance.sar.toLocaleString()}</p><p className="text-white/60 text-[9px]">ريال سعودي</p></div>
-                            <div className="ios-balance-card" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }}><p className="text-white/80 text-[10px] font-medium">🇺🇸 المتاح</p><p className="text-white text-xl font-bold">{availableBalance.usd.toLocaleString()}</p><p className="text-white/60 text-[9px]">دولار</p></div>
-                            <div className="ios-balance-card" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}><p className="text-white/80 text-[10px] font-medium">🇾🇪 المتاح</p><p className="text-white text-xl font-bold">{availableBalance.yer.toLocaleString()}</p><p className="text-white/60 text-[9px]">ريال يمني</p></div>
-                        </div>
-
-                        <div className="mb-5"><input type="text" placeholder="🔍 بحث باسم الحالة..." className="ios-search w-full" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
-
-                        {activeTab === 'emergency' && (
-                            <div className="fade-in">
-                                {canEdit() && (<button onClick={() => setIsModalOpen(true)} className="ios-button ios-button-primary w-full py-4 rounded-2xl font-medium text-base mb-5">+ إضافة اسم جديد</button>)}
-                                <div className="flex gap-2 mb-5 overflow-x-auto pb-2">
-                                    {[
-                                        { id: 'all', label: 'الجميع', count: filteredEmergencyList.length },
-                                        { id: 'active', label: 'نشط', count: filteredEmergencyList.filter(d => parseInfo(d).status === 'active').length },
-                                        { id: 'expiring', label: 'ينتهي', count: filteredEmergencyList.filter(d => parseInfo(d).status === 'expiring').length },
-                                        { id: 'paid', label: 'مكتمل', count: filteredEmergencyList.filter(d => parseInfo(d).progress >= 100).length },
-                                        { id: 'partial', label: 'جزئي', count: filteredEmergencyList.filter(d => { const p = parseInfo(d).progress; return p > 0 && p < 100; }).length },
-                                        { id: 'unpaid', label: 'انتظار', count: filteredEmergencyList.filter(d => parseInfo(d).progress === 0).length },
-                                        { id: 'expired', label: 'منتهي', count: filteredEmergencyList.filter(d => parseInfo(d).status === 'expired').length }
-                                    ].map(pill => (
-                                        <button key={pill.id} onClick={() => setFilter(pill.id)} className={`ios-filter-pill ${filter === pill.id ? 'ios-filter-pill-active' : 'ios-filter-pill-inactive'}`}>{pill.label} {pill.count > 0 && <span className="mr-1">({pill.count})</span>}</button>
-                                    ))}
+                    {trackedRequest && (
+                        <div className={`rounded-2xl p-5 ${getStatusDisplay(trackedRequest.status).bg} fade-in text-gray-800`}>
+                            <div className="flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3">
+                                <div>
+                                    <h4 className="font-bold text-lg">{trackedRequest.caseName}</h4>
+                                    <p className="text-sm text-gray-600 mt-1">👤 مقدم الطلب: {trackedRequest.requesterName}</p>
                                 </div>
-                                {filteredEmergencyList.length === 0 ? (<div className="ios-card p-12 text-center"><div className="text-5xl mb-3">📭</div><p className="text-[#8e8e93]">لا توجد حالات طوارئ</p></div>) : (filteredEmergencyList.map(d => { const info = parseInfo(d); const dataEntryName = d.dataEntryName || d.recordedBy || 'غير محدد'; const entryLocation = d.entryLocation || d.location || geoInfo.location; return (<div key={d.id} className="ios-emergency-card"><div className="mb-4"><div className="flex justify-between items-start"><h3 className="text-lg font-bold text-black">{d.name}</h3><span className="ios-badge" style={{ backgroundColor: info.statusColor + '20', color: info.statusColor }}>{info.status === 'active' && '✅ نشط'}{info.status === 'expiring' && '⚠️ ينتهي قريباً'}{info.status === 'expired' && '❌ منتهي'}</span></div><div className="flex gap-2 mt-1 flex-wrap"><span className="ios-badge bg-[#e9ecef] text-[#6c6c70]">📍 {entryLocation}</span>{info.durationText !== 'غير محدد' && <span className="ios-badge bg-[#e9ecef] text-[#6c6c70]">📅 {info.durationText}</span>}{d.expiryDate && <span className="ios-badge bg-[#e9ecef] text-[#6c6c70]">📆 ينتهي: {new Date(d.expiryDate).toLocaleDateString('ar-EG')}</span>}<span className="ios-badge bg-[#e9ecef] text-[#6c6c70]">👤 {dataEntryName}</span></div></div><div className="ios-stats-grid"><div className="ios-stat-card"><div className="ios-stat-label">💰 المبلغ بالكامل</div><div className="ios-stat-value text-[#34c759]">{info.total.toLocaleString()} <span className="text-xs">{info.curr.toUpperCase()}</span></div></div><div className="ios-stat-card"><div className="ios-stat-label">📊 المبلغ المتبقي</div><div className="ios-stat-value text-[#ff9500]">{info.remaining.toLocaleString()} <span className="text-xs">{info.curr.toUpperCase()}</span></div></div><div className="ios-stat-card"><div className="ios-stat-label">📅 تاريخ التسجيل</div><div className="ios-stat-value text-[#8e8e93] text-base">{info.formattedDate}</div></div><div className="ios-stat-card"><div className="ios-stat-label">👤 مدخل البيانات</div><div className="ios-stat-value text-[#8e8e93] text-base">{dataEntryName}</div></div></div><div className="mt-3"><div className="ios-progress"><div className="ios-progress-fill" style={{ width: `${info.progress}%`, backgroundColor: info.progressColor }}></div></div><div className="flex justify-between mt-2 text-xs text-[#8e8e93]"><span>✓ مدفوع: {info.paid.toLocaleString()}</span><span>⚡ {info.progress}%</span><span>⏳ متبقي: {info.remaining.toLocaleString()}</span></div></div>{canEdit() && (<div className="flex gap-3 mt-4 pt-3 border-t border-[#c6c6c8]/30"><button onClick={() => { setEditId(d.id); setForm({ name: d.name, recordedBy: currentUser.name, totalAmount: info.total, paidAmount: info.paid, currency: info.curr, duration: d.duration || '3 months', startDate: d.startDate || new Date().toISOString().split('T')[0] }); setIsModalOpen(true); }} className="flex-1 ios-button ios-button-secondary py-3 rounded-xl text-sm">✏️ تعديل</button><button onClick={() => deleteEmergencyRecord(d.id)} className="flex-1 ios-button ios-button-secondary py-3 rounded-xl text-sm text-[#ff3b30]">🗑 حذف</button></div>)}</div>); }))}
+                                <div className="text-2xl">{getStatusDisplay(trackedRequest.status).text.split(' ')[0]}</div>
                             </div>
-                        )}
-
-                        {activeTab === 'zakat' && (
-                            <div className="fade-in">
-                                {canEdit() && (<button onClick={() => setIsZakatModalOpen(true)} className="ios-button ios-button-primary w-full py-4 rounded-2xl font-medium mb-5">+ إضافة زكاة جديدة</button>)}
-                                {zakatRecords.length === 0 ? (<div className="ios-card p-12 text-center"><div className="text-5xl mb-3">🕌</div><p className="text-[#8e8e93]">لا توجد سجلات زكاة</p></div>) : (zakatRecords.map(z => (<div key={z.id} className="ios-card p-5 mb-3"><div className="flex justify-between items-center"><div><h3 className="font-bold text-lg">{z.name}</h3><p className="text-xs text-[#8e8e93] mt-1">مسجل: {z.recordedBy}</p></div><div className="text-xl font-bold text-[#34c759]">{parseFloat(z.amount).toLocaleString()} {z.currency === 'sar' ? 'ر.س' : z.currency === 'usd' ? '$' : 'ي.ي'}</div></div>{canEdit() && (<div className="flex gap-3 mt-4 pt-3 border-t border-[#c6c6c8]/30"><button onClick={() => { setEditZakatId(z.id); setZakatForm({ name: z.name, amount: z.amount, currency: z.currency, recordedBy: currentUser.name }); setIsZakatModalOpen(true); }} className="flex-1 ios-button ios-button-secondary py-2 rounded-xl text-sm">✏️ تعديل</button><button onClick={() => deleteZakatRecord(z.id)} className="flex-1 ios-button ios-button-secondary py-2 rounded-xl text-sm text-[#ff3b30]">🗑 حذف</button></div>)}</div>)))}
+                            
+                            <div className="space-y-3 text-sm">
+                                <p><span className="font-bold">🏷️ نوع الحالة:</span> {getCaseTypeLabel(trackedRequest.caseType)}</p>
+                                <p><span className="font-bold">📅 تاريخ التقديم:</span> {trackedRequest.requestDate}</p>
+                                {trackedRequest.requestAmount && (
+                                    <p><span className="font-bold">💰 المبلغ المطلوب:</span> {parseFloat(trackedRequest.requestAmount).toLocaleString()} 
+                                        {trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي'}</p>
+                                )}
+                                <p><span className="font-bold">⚡ مستوى الاستعجال:</span> 
+                                    {trackedRequest.urgencyLevel === 'urgent' ? ' 🚨 مستعجل' : ' ✅ غير مستعجل'}</p>
+                                <div className="bg-white/40 p-3 rounded-xl mt-2">
+                                    <span className="font-bold block mb-1 text-xs text-gray-500">📝 ملخص الحالة:</span>
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trackedRequest.caseDetails}</p>
+                                </div>
                             </div>
-                        )}
 
-                        {activeTab === 'withdrawal' && (
-                            <div className="fade-in">
-                                {canEdit() && (<button onClick={() => setIsExpenseModalOpen(true)} className="ios-button ios-button-primary w-full py-4 rounded-2xl font-medium mb-5">💰 تسجيل صرف جديد</button>)}
-                                {expensesList.length === 0 ? (<div className="ios-card p-12 text-center"><div className="text-5xl mb-3">💰</div><p className="text-[#8e8e93]">لا توجد طلبات صرف</p></div>) : (expensesList.map(exp => (<div key={exp.id} className="ios-card p-5 mb-3"><div className="flex justify-between items-start"><div><h3 className="font-bold text-lg">{exp.beneficiaryName}</h3><p className="text-xs text-[#8e8e93] mt-1">{exp.caseType}</p><p className="text-[10px] text-[#8e8e93] mt-1">صرف بواسطة: {exp.addedBy}</p></div><div className="text-xl font-bold text-[#ff3b30]">{parseFloat(exp.amount).toLocaleString()} {exp.currency}</div></div><p className="text-sm text-[#6c6c70] mt-2">{exp.caseDetails}</p><div className="flex justify-between mt-3 text-xs text-[#8e8e93]"><span>📅 {exp.date}</span>{canEdit() && <button onClick={() => deleteExpense(exp.id)} className="text-[#ff3b30]">حذف</button>}</div></div>)))}
-                            </div>
-                        )}
-
-                        {activeTab === 'requests' && (
-                            <div className="fade-in">
-                                {canEdit() && (<button onClick={() => setShowRequestForm(true)} className="ios-button ios-button-primary w-full py-4 rounded-2xl font-medium mb-5">📝 تقديم طلب مساعدة</button>)}
-                                <div className="ios-card p-5 mb-5"><h3 className="font-semibold mb-3">🔍 متابعة طلب سابق</h3><div className="flex gap-2"><input type="text" placeholder="رقم الطلب" className="ios-search flex-1" value={trackingId} onChange={e => setTrackingId(e.target.value)} /><button onClick={checkRequestStatus} className="ios-button ios-button-primary px-5 rounded-xl">بحث</button></div>{submittedRequest && (<div className="mt-3 p-3 bg-[#e9ecef] rounded-xl text-center"><p className={`font-medium ${submittedRequest.status === 'approved' ? 'text-[#34c759]' : submittedRequest.status === 'rejected' ? 'text-[#ff3b30]' : 'text-[#ff9500]'}`}>{submittedRequest.status === 'pending' && '⏳ قيد المراجعة'}{submittedRequest.status === 'approved' && '✅ تمت الموافقة'}{submittedRequest.status === 'rejected' && '❌ تم الرفض'}</p></div>)}</div>
-                                <div><div className="ios-card p-5 mb-5" style={{ background: '#1c1c1e' }}><h3 className="text-white font-bold mb-3">📊 إحصائيات الطلبات</h3><div className="grid grid-cols-4 gap-2 text-center"><div><div className="text-2xl font-bold text-white">{assistanceRequests.length}</div><div className="text-xs text-[#8e8e93]">الكل</div></div><div><div className="text-2xl font-bold text-[#ff9500]">{assistanceRequests.filter(r => r.status === 'pending').length}</div><div className="text-xs text-[#8e8e93]">قيد المراجعة</div></div><div><div className="text-2xl font-bold text-[#34c759]">{assistanceRequests.filter(r => r.status === 'approved').length}</div><div className="text-xs text-[#8e8e93]">مقبولة</div></div><div><div className="text-2xl font-bold text-[#ff3b30]">{assistanceRequests.filter(r => r.status === 'rejected').length}</div><div className="text-xs text-[#8e8e93]">مرفوضة</div></div></div></div>
-                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2"><button onClick={() => setRequestFilter('all')} className={`ios-filter-pill ${requestFilter === 'all' ? 'ios-filter-pill-active' : 'ios-filter-pill-inactive'}`}>الجميع ({assistanceRequests.length})</button><button onClick={() => setRequestFilter('pending')} className={`ios-filter-pill ${requestFilter === 'pending' ? 'ios-filter-pill-active' : 'ios-filter-pill-inactive'}`}>⏳ قيد المراجعة ({assistanceRequests.filter(r => r.status === 'pending').length})</button><button onClick={() => setRequestFilter('approved')} className={`ios-filter-pill ${requestFilter === 'approved' ? 'ios-filter-pill-active' : 'ios-filter-pill-inactive'}`}>✅ مقبولة ({assistanceRequests.filter(r => r.status === 'approved').length})</button><button onClick={() => setRequestFilter('rejected')} className={`ios-filter-pill ${requestFilter === 'rejected' ? 'ios-filter-pill-active' : 'ios-filter-pill-inactive'}`}>❌ مرفوضة ({assistanceRequests.filter(r => r.status === 'rejected').length})</button></div>
-                                {filteredRequests.map(req => (<div key={req.id} className="ios-card p-5 mb-4"><div className="flex justify-between items-start mb-4"><div><h4 className="text-xl font-bold text-black">{req.caseName}</h4><div className="flex gap-2 mt-1 flex-wrap"><span className="ios-badge bg-[#e9ecef] text-[#6c6c70]">🆔 {req.id?.slice(-8)}</span><span className={`ios-badge ${req.status === 'pending' ? 'bg-[#ff9500] text-white' : req.status === 'approved' ? 'bg-[#34c759] text-white' : 'bg-[#ff3b30] text-white'}`}>{req.status === 'pending' ? '⏳ قيد المراجعة' : req.status === 'approved' ? '✅ مقبول' : '❌ مرفوض'}</span></div></div>{canEdit() && <button onClick={() => deleteRequest(req.id)} className="ios-button ios-button-secondary px-4 py-2 rounded-xl text-sm text-[#ff3b30]">🗑 حذف</button>}</div><div className="space-y-3"><div className="request-detail-row"><span className="request-detail-label">👤 مقدم الطلب:</span><span className="request-detail-value">{req.requesterName}</span></div><div className="request-detail-row"><span className="request-detail-label">🏷️ نوع الحالة:</span><span className="request-detail-value">{getCaseTypeLabel(req.caseType)}</span></div><div className="request-detail-row"><span className="request-detail-label">📝 تفاصيل الحالة:</span><span className="request-detail-value">{req.caseDetails || 'لا توجد تفاصيل'}</span></div><div className="request-detail-row"><span className="request-detail-label">💰 تقرير الدخل:</span><span className="request-detail-value">{req.incomeReport || 'لا يوجد تقرير'}</span></div><div className="request-detail-row"><span className="request-detail-label">💵 المبلغ المطلوب:</span><span className="request-detail-value text-[#34c759] font-bold">{parseFloat(req.requestAmount || 0).toLocaleString()} {req.preferredCurrency === 'sar' ? 'ر.س' : req.preferredCurrency === 'usd' ? '$' : 'ي.ي'}</span></div><div className="request-detail-row"><span className="request-detail-label">⚡ مستوى الاستعجال:</span><span className="request-detail-value">{req.urgencyLevel === 'urgent' ? '🚨 مستعجل' : '✅ غير مستعجل'}</span></div><div className="request-detail-row"><span className="request-detail-label">📅 تاريخ التقديم:</span><span className="request-detail-value">{req.requestDate}</span></div><div className="request-detail-row"><span className="request-detail-label">📍 موقع التقديم:</span><span className="request-detail-value">{req.location || 'غير محدد'}</span></div></div>{req.status === 'pending' && canEdit() && (<div className="flex gap-3 mt-4 pt-3 border-t border-[#c6c6c8]/30"><button onClick={() => updateRequestStatus(req.id, 'approved')} className="flex-1 ios-button ios-button-primary py-3 rounded-xl">✅ قبول الطلب</button><button onClick={() => updateRequestStatus(req.id, 'rejected')} className="flex-1 ios-button ios-button-secondary py-3 rounded-xl text-[#ff3b30]">❌ رفض الطلب</button></div>)}</div>))}</div>
-                            </div>
-                        )}
-                    </div>
-
-                    {canEdit() && (
-                        <div className="fixed bottom-6 left-0 right-0 px-4 pointer-events-none">
-                            <div className="max-w-[480px] mx-auto pointer-events-auto">
-                                <button onClick={() => { if (activeTab === 'emergency') setIsModalOpen(true); else if (activeTab === 'zakat') setIsZakatModalOpen(true); else if (activeTab === 'withdrawal') setIsExpenseModalOpen(true); else if (activeTab === 'requests') setShowRequestForm(true); }} className="ios-fab w-full py-4 text-white font-semibold text-base flex items-center justify-center gap-2">
-                                    {activeTab === 'emergency' && '+ إضافة اسم جديد'}
-                                    {activeTab === 'zakat' && '+ إضافة زكاة'}
-                                    {activeTab === 'withdrawal' && '💰 تسجيل صرف'}
-                                    {activeTab === 'requests' && '📝 تقديم طلب'}
-                                </button>
+                            <div className="mt-4 pt-3 border-t border-black/10 text-center">
+                                <p className="text-sm font-bold">
+                                    حالة الطلب الحالية: {getStatusDisplay(trackedRequest.status).text}
+                                </p>
+                                {trackedRequest.reviewedAt && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        تمت المراجعة بتاريخ: {new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA')}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
 
-                    {isModalOpen && canEdit() && (<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div className="bg-white rounded-3xl p-6 w-full max-w-md"><h2 className="text-xl font-bold mb-4">{editId ? 'تعديل' : 'إضافة حالة طوارئ'}</h2><form onSubmit={handleSave} className="space-y-4"><input placeholder="اسم الحالة" className="w-full p-3 border rounded-xl" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /><div className="grid grid-cols-2 gap-3"><input type="number" placeholder="المبلغ الإجمالي" value={form.totalAmount} onChange={e => setForm({ ...form, totalAmount: e.target.value })} className="p-3 border rounded-xl" required /><input type="number" placeholder="المبلغ المدفوع" value={form.paidAmount} onChange={e => setForm({ ...form, paidAmount: e.target.value })} className="p-3 border rounded-xl" /></div><div className="grid grid-cols-2 gap-3"><select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className="p-3 border rounded-xl"><option value="sar">ريال سعودي</option><option value="usd">دولار</option><option value="yer">ريال يمني</option></select><select value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className="p-3 border rounded-xl"><option value="3 months">3 أشهر</option><option value="6 months">6 أشهر</option><option value="1 year">سنة</option><option value="none">غير محدد</option></select></div><input type="date" label="تاريخ البدء" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} className="w-full p-3 border rounded-xl" required /><div className="p-3 bg-[#e9ecef] rounded-xl text-center text-sm text-[#6c6c70]">مدخل البيانات: {currentUser?.name} (مثبت)</div><button type="submit" className="w-full ios-button ios-button-primary py-3 rounded-xl font-medium">حفظ</button><button type="button" onClick={closeModal} className="w-full text-[#8e8e93] py-2">إلغاء</button></form></div></div>)}
-
-                    {isExpenseModalOpen && canEdit() && (<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div className="bg-white rounded-3xl p-6 w-full max-w-md"><h2 className="text-xl font-bold mb-4">تسجيل صرف</h2><form onSubmit={handleSaveExpense} className="space-y-4"><input placeholder="المستفيد" className="w-full p-3 border rounded-xl" value={expenseForm.beneficiaryName} onChange={e => setExpenseForm({ ...expenseForm, beneficiaryName: e.target.value })} required /><select className="w-full p-3 border rounded-xl" value={expenseForm.caseType} onChange={e => setExpenseForm({ ...expenseForm, caseType: e.target.value })}><option value="">نوع الحالة</option><option>حالة مرضية</option><option>مساعدة مالية</option><option>حادث</option></select><textarea placeholder="تفاصيل" className="w-full p-3 border rounded-xl" rows="3" value={expenseForm.caseDetails} onChange={e => setExpenseForm({ ...expenseForm, caseDetails: e.target.value })}></textarea><div className="grid grid-cols-2 gap-2"><input type="number" placeholder="المبلغ" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="p-3 border rounded-xl" required /><select value={expenseForm.currency} onChange={e => setExpenseForm({ ...expenseForm, currency: e.target.value })} className="p-3 border rounded-xl"><option value="ريال يمني">ريال يمني</option><option value="ريال سعودي">ريال سعودي</option><option value="دولار">دولار</option></select></div><input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} className="w-full p-3 border rounded-xl" /><div className="p-3 bg-[#e9ecef] rounded-xl text-center text-sm text-[#6c6c70]">تم الصرف بواسطة: {currentUser?.name} (مثبت)</div><button type="submit" disabled={isExpenseLoading} className="w-full ios-button ios-button-primary py-3 rounded-xl font-medium">{isExpenseLoading ? 'جاري...' : 'تأكيد الصرف'}</button><button type="button" onClick={() => setIsExpenseModalOpen(false)} className="w-full text-[#8e8e93] py-2">إلغاء</button></form></div></div>)}
-
-                    {isZakatModalOpen && canEdit() && (<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"><div className="bg-white rounded-3xl p-6 w-full max-w-md"><h2 className="font-bold text-xl mb-4">{editZakatId ? 'تعديل' : 'زكاة جديدة'}</h2><form onSubmit={handleSaveZakat} className="space-y-3"><input placeholder="الاسم" className="w-full p-3 border rounded-xl" value={zakatForm.name} onChange={e => setZakatForm({ ...zakatForm, name: e.target.value })} required /><input type="number" placeholder="المبلغ" className="w-full p-3 border rounded-xl" value={zakatForm.amount} onChange={e => setZakatForm({ ...zakatForm, amount: e.target.value })} required /><select className="w-full p-3 border rounded-xl" value={zakatForm.currency} onChange={e => setZakatForm({ ...zakatForm, currency: e.target.value })}><option value="yer">ريال يمني</option><option value="sar">ريال سعودي</option><option value="usd">دولار</option></select><div className="p-3 bg-[#e9ecef] rounded-xl text-center text-sm text-[#6c6c70]">مسجل بواسطة: {currentUser?.name} (مثبت)</div><button type="submit" className="w-full ios-button ios-button-primary py-3 rounded-xl font-medium">حفظ</button><button type="button" onClick={closeZakatModal} className="w-full text-[#8e8e93] py-2">إلغاء</button></form></div></div>)}
-
-                    {showRequestForm && canEdit() && (<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"><div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"><div className="flex justify-between mb-4"><h2 className="text-xl font-bold">تقديم طلب مساعدة</h2><button onClick={() => setShowRequestForm(false)} className="text-[#8e8e93]">✖</button></div><form onSubmit={submitAssistanceRequest} className="space-y-4"><input placeholder="اسم الحالة" className="w-full p-3 border rounded-xl" value={requestFormData.caseName} onChange={e => setRequestFormData({ ...requestFormData, caseName: e.target.value })} required /><input placeholder="اسم مقدم الحالة" className="w-full p-3 border rounded-xl" value={requestFormData.requesterName} onChange={e => setRequestFormData({ ...requestFormData, requesterName: e.target.value })} required /><select className="w-full p-3 border rounded-xl" value={requestFormData.caseType} onChange={e => setRequestFormData({ ...requestFormData, caseType: e.target.value })} required><option value="">نوع الحالة</option>{caseTypes.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}</select><textarea rows="4" placeholder="تفاصيل الحالة" className="w-full p-3 border rounded-xl" value={requestFormData.caseDetails} onChange={e => setRequestFormData({ ...requestFormData, caseDetails: e.target.value })} required></textarea><textarea rows="3" placeholder="تقرير الدخل" className="w-full p-3 border rounded-xl" value={requestFormData.incomeReport} onChange={e => setRequestFormData({ ...requestFormData, incomeReport: e.target.value })} required></textarea><div className="grid grid-cols-2 gap-2"><input type="number" placeholder="المبلغ" className="p-3 border rounded-xl" value={requestFormData.requestAmount} onChange={e => setRequestFormData({ ...requestFormData, requestAmount: e.target.value })} /><select className="p-3 border rounded-xl" value={requestFormData.preferredCurrency} onChange={e => setRequestFormData({ ...requestFormData, preferredCurrency: e.target.value })}><option value="yer">ريال يمني</option><option value="sar">ريال سعودي</option><option value="usd">دولار</option></select></div><div className="flex gap-3"><label className="flex items-center gap-2"><input type="radio" value="urgent" checked={requestFormData.urgencyLevel === 'urgent'} onChange={e => setRequestFormData({ ...requestFormData, urgencyLevel: e.target.value })} /><span className="text-[#ff3b30]">🚨 مستعجل</span></label><label className="flex items-center gap-2"><input type="radio" value="notUrgent" checked={requestFormData.urgencyLevel === 'notUrgent'} onChange={e => setRequestFormData({ ...requestFormData, urgencyLevel: e.target.value })} /><span className="text-[#34c759]">✅ غير مستعجل</span></label></div><div className="p-3 bg-[#e9ecef] rounded-xl text-center text-sm text-[#6c6c70]">تم التقديم بواسطة: {currentUser?.name}</div><button type="submit" className="w-full ios-button ios-button-primary py-3 rounded-xl font-medium">إرسال الطلب</button></form></div></div>)}
+                    <div className="mt-6 text-center text-xs text-gray-400">
+                        <p>📌 سيتم تحديث هذه الصفحة فور مراجعة طلبك</p>
+                        <p className="mt-1">يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت</p>
+                    </div>
                 </div>
             );
-        }
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
 </html>
+
