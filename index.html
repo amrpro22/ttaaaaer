@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -60,6 +59,29 @@
             { value: 'financialAid', label: ' مساعدة مالية', icon: '' },
             { value: 'other', label: ' أخرى', icon: '' }
         ];
+
+        // عداد ثابت لبدء أرقام الطلبات من 100
+        // سنستخدم قيمة مخزنة في Firebase للحفاظ على التسلسل بشكل دائم
+        const SEQUENCE_KEY = 'requestSequenceCounter';
+        
+        // دالة للحصول على الرقم التسلسلي التالي (يبدأ من 100)
+        async function getNextRequestNumber() {
+            const sequenceRef = database.ref(SEQUENCE_KEY);
+            let currentNumber = 100; // البدء من 100
+            
+            // نستخدم transaction لضمان عدم تكرار الأرقام
+            const result = await sequenceRef.transaction((currentValue) => {
+                if (currentValue === null) {
+                    return currentNumber; // أول طلب يكون رقم 100
+                }
+                return currentValue + 1; // زيادة الرقم بمقدار 1
+            });
+            
+            if (result.snapshot && result.snapshot.val() !== null) {
+                return result.snapshot.val();
+            }
+            return currentNumber;
+        }
 
         const App = () => {
             const [view, setView] = useState('form'); // 'form' or 'track'
@@ -138,7 +160,7 @@
                         {/* Request Form */}
                         {view === 'form' && !submittedRequest && (
                             <RequestForm 
-                                onSubmit={(requestId) => setSubmittedRequest({ id: requestId, status: 'pending' })} 
+                                onSubmit={(requestId, requestNumber) => setSubmittedRequest({ id: requestId, number: requestNumber, status: 'pending' })} 
                                 geoInfo={geoInfo} 
                                 caseTypes={caseTypes} 
                                 showNotification={showNotification}
@@ -146,7 +168,7 @@
                         )}
                         
                         {/* Submission Result */}
-                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} />}
+                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} showNotification={showNotification} />}
                         
                         {/* Track Request */}
                         {view === 'track' && (
@@ -183,19 +205,24 @@
                 setIsSubmitting(true);
                 
                 try {
+                    // الحصول على الرقم التسلسلي التالي (يبدأ من 100)
+                    const requestNumber = await getNextRequestNumber();
+                    
                     const newRequestRef = database.ref('assistanceRequests').push();
                     const requestId = newRequestRef.key;
                     
+                    // تخزين رقم الطلب المرئي (يبدأ من 100) في قاعدة البيانات
                     await newRequestRef.set({
                         ...formData,
                         requestId: requestId,
+                        requestNumber: requestNumber, // الرقم التسلسلي الذي يبدأ من 100
                         location: geoInfo.location,
                         status: 'pending',
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     });
                     
                     showNotification('تم إرسال طلبك بنجاح!');
-                    onSubmit(requestId);
+                    onSubmit(requestId, requestNumber);
                 } catch (error) {
                     console.error(error);
                     showNotification('حدث خطأ في إرسال الطلب، يرجى المحاولة لاحقاً', 'error');
@@ -301,9 +328,10 @@
             );
         };
 
-        // Submission Result Component
-        const SubmissionResult = ({ request, onNewRequest }) => {
+        // Submission Result Component - مع زر نسخ رقم الطلب فقط
+        const SubmissionResult = ({ request, onNewRequest, showNotification }) => {
             const [currentStatus, setCurrentStatus] = useState(request.status);
+            const [copySuccess, setCopySuccess] = useState(false);
             
             useEffect(() => {
                 const statusRef = database.ref(`assistanceRequests/${request.id}/status`);
@@ -313,6 +341,18 @@
                 });
                 return () => statusRef.off();
             }, [request.id]);
+
+            // دالة لنسخ رقم الطلب فقط
+            const copyRequestNumber = () => {
+                const requestNumber = request.number;
+                navigator.clipboard.writeText(requestNumber.toString()).then(() => {
+                    setCopySuccess(true);
+                    showNotification('تم نسخ رقم الطلب بنجاح!');
+                    setTimeout(() => setCopySuccess(false), 2000);
+                }).catch(() => {
+                    showNotification('فشل نسخ الرقم، حاول يدوياً', 'error');
+                });
+            };
 
             const getStatusContent = () => {
                 switch(currentStatus) {
@@ -365,7 +405,21 @@
                     
                     <div className="bg-gray-50 rounded-xl p-4 mb-6">
                         <p className="text-sm text-gray-500 mb-2">رقم الطلب المرجعي:</p>
-                        <p className="text-lg font-mono font-bold text-purple-600 selection:bg-purple-200">{request.id}</p>
+                        <div className="flex items-center justify-center gap-3 flex-wrap">
+                            <p className="text-2xl font-mono font-bold text-purple-600 selection:bg-purple-200">
+                                {request.number}
+                            </p>
+                            {/* زر نسخ رقم الطلب فقط - بدون تغيير أي شيء آخر */}
+                            <button 
+                                onClick={copyRequestNumber}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all btn-press ${
+                                    copySuccess ? 'bg-green-500 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                }`}
+                            >
+                                <span className="text-lg">{copySuccess ? '✓' : '📋'}</span>
+                                <span className="text-sm">{copySuccess ? 'تم النسخ' : 'نسخ الرقم'}</span>
+                            </button>
+                        </div>
                         <p className="text-xs text-gray-400 mt-3">⚠️ احتفظ بهذا الرقم لمتابعة طلبك</p>
                     </div>
 
@@ -400,16 +454,25 @@
                 }
                 setIsLoading(true);
                 
-                const requestRef = database.ref(`assistanceRequests/${trackingId.trim()}`);
-                requestRef.once('value', (snapshot) => {
+                // نبحث باستخدام requestNumber (الرقم المرئي) بدلاً من id
+                // نستخدم orderByChild للبحث عن الرقم التسلسلي
+                const requestsRef = database.ref('assistanceRequests');
+                requestsRef.orderByChild('requestNumber').equalTo(parseInt(trackingId.trim())).once('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        setTrackedRequest({ id: trackingId.trim(), ...data });
+                        // الحصول على أول طابق (يجب أن يكون فريداً)
+                        const requestKey = Object.keys(data)[0];
+                        const requestData = data[requestKey];
+                        setTrackedRequest({ id: requestKey, number: requestData.requestNumber, ...requestData });
                         showNotification('تم العثور على الطلب بنجاح!');
                     } else {
                         showNotification('لم يتم العثور على الرقم المرجعي للطلب', 'error');
                         setTrackedRequest(null);
                     }
+                    setIsLoading(false);
+                }).catch((error) => {
+                    console.error(error);
+                    showNotification('حدث خطأ في البحث', 'error');
                     setIsLoading(false);
                 });
             };
@@ -438,7 +501,7 @@
                     
                     <div className="flex gap-3 mb-6">
                         <input type="text" 
-                            placeholder="أدخل رقم الطلب" 
+                            placeholder="أدخل رقم الطلب (رقم مرجعي يبدأ من 100)" 
                             className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-left"
                             dir="ltr"
                             value={trackingId} 
@@ -500,4 +563,3 @@
     </script>
 </body>
 </html>
-
