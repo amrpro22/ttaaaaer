@@ -177,7 +177,7 @@
             { name: "مصطفى الشجاع", password: "1111", role: "user" },
             { name: "مجدي عبده علي", password: "1112", role: "user" },
             { name: "ياسر الشجاع", password: "1113", role: "user" },
-            { name: "عمرو مسعد الشجاع", password: "admin2024", role: "developer", title: "مطور النظام - تحكم كامل" }
+            { name: "عمرو مسعد الشجاع", password: "1993", role: "developer", title: "مطور النظام - تحكم كامل" }
         ];
 
         // Types of cases
@@ -266,7 +266,7 @@
                                         React.createElement('option', { value: "" }, "-- اختر اسم المستخدم --"),
                                         allowedUsers.map(user => 
                                             React.createElement('option', { key: user.name, value: user.name }, 
-                                                user.name + (user.role === 'developer' ? ' 👑 (مطور النظام)' : '')
+                                                user.name + (user.role === 'developer' ? '  (مطور النظام)' : '')
                                             )
                                         )
                                     )
