@@ -6,8 +6,8 @@
     <title>تقديم طلب مساعدة - نظام الصرف المتكامل</title>
     
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -30,7 +30,6 @@
             padding: 20px;
         }
         
-        /* تحديث الأنماط لتتناسب مع التصميم الجديد - خطوط نظيفة وألوان مميزة */
         .ios-card {
             background: #ffffff;
             border-radius: 32px;
@@ -45,7 +44,6 @@
             box-shadow: 0 24px 42px -14px rgba(0, 0, 0, 0.12);
         }
         
-        /* بطاقات متعددة الألوان */
         .card-primary {
             background: linear-gradient(135deg, #ffffff 0%, #fefcff 100%);
             border-top: 4px solid #5b8cce;
@@ -123,6 +121,34 @@
             pointer-events: auto;
             font-weight: 500;
         }
+        
+        .dev-badge {
+            background: linear-gradient(135deg, #d4af37, #f5d76e);
+            color: #1e3a5f;
+        }
+        
+        .developer-card {
+            background: linear-gradient(135deg, #1e3a5f, #2c5a7a);
+            border-radius: 16px;
+            padding: 6px 12px;
+            display: inline-block;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+        
+        .developer-card span {
+            color: #f5d76e;
+            font-weight: 500;
+            font-size: 11px;
+        }
+        
+        .developer-card .dev-name {
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: 0.3px;
+        }
     </style>
 </head>
 <body>
@@ -145,6 +171,14 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
+
+        // بيانات المستخدمين المسموح لهم
+        const allowedUsers = [
+            { name: "مصطفى الشجاع", password: "1111", role: "user" },
+            { name: "مجدي عبده علي", password: "1112", role: "user" },
+            { name: "ياسر الشجاع", password: "1113", role: "user" },
+            { name: "عمرو مسعد الشجاع", password: "admin2024", role: "developer", title: "مطور النظام - تحكم كامل" }
+        ];
 
         // Types of cases
         const caseTypes = [
@@ -177,101 +211,103 @@
             return currentNumber;
         }
 
-        const App = () => {
-            const [view, setView] = useState('form');
-            const [submittedRequest, setSubmittedRequest] = useState(null);
-            const [trackingId, setTrackingId] = useState('');
-            const [trackedRequest, setTrackedRequest] = useState(null);
-            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
-            const [notification, setNotification] = useState(null);
+        // Component Login
+        const LoginScreen = ({ onLogin, showNotification }) => {
+            const [selectedUser, setSelectedUser] = useState('');
+            const [password, setPassword] = useState('');
+            const [showPassword, setShowPassword] = useState(false);
 
-            const showNotification = (message, type = 'success') => {
-                setNotification({ message, type });
-                setTimeout(() => setNotification(null), 3000);
+            const handleLogin = () => {
+                if (!selectedUser) {
+                    showNotification('الرجاء اختيار اسم المستخدم', 'error');
+                    return;
+                }
+                
+                const user = allowedUsers.find(u => u.name === selectedUser);
+                if (!user) {
+                    showNotification('المستخدم غير موجود', 'error');
+                    return;
+                }
+                
+                if (password !== user.password) {
+                    showNotification('كلمة المرور غير صحيحة', 'error');
+                    return;
+                }
+                
+                onLogin(user);
+                showNotification(`مرحباً ${user.name}`, 'success');
             };
 
-            useEffect(() => {
-                fetch('https://ipapi.co/json/')
-                    .then(res => res.json())
-                    .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
-                    .catch(() => setGeoInfo({ location: 'اليمن' }));
-            }, []);
-
-            useEffect(() => {
-                auth.signInAnonymously().catch(console.error);
-            }, []);
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleLogin();
+                }
+            };
 
             return (
-                <div className="min-h-screen py-6 px-4">
-                    <div className="max-w-2xl mx-auto">
-                        
-                        {/* Custom Notification Toast */}
-                        {notification && (
-                            <div className="toast-notification fade-in">
-                                <div className={`toast-content ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-[#2b6e9e] text-white'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <span>{notification.type === 'error' ? '⚠️' : '✓'}</span>
-                                        <span>{notification.message}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <div className="inline-block p-4 bg-white/80 backdrop-blur rounded-full mb-4 shadow-md">
-                                <span className="text-5xl">📝</span>
-                            </div>
-                            <h1 className="text-3xl font-bold" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2c5a7a)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>تقديم طلب مساعدة</h1>
-                            <p className="text-[#4a5b7a] mt-2">نظام الصرف المتكامل - صندوق الحالات الطارئة</p>
-                        </div>
-
-                        {/* Toggle Buttons */}
-                        <div className="flex gap-3 mb-6">
-                            <button 
-                                onClick={() => { setView('form'); setSubmittedRequest(null); }}
-                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}`}
-                            >
-                                تقديم طلب جديد
-                            </button>
-                            <button 
-                                onClick={() => { setView('track'); setTrackedRequest(null); }}
-                                className={`flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}`}
-                            >
-                                متابعة طلب
-                            </button>
-                        </div>
-
-                        {/* Request Form */}
-                        {view === 'form' && !submittedRequest && (
-                            <RequestForm 
-                                onSubmit={(requestId, requestNumber) => setSubmittedRequest({ id: requestId, number: requestNumber, status: 'pending' })} 
-                                geoInfo={geoInfo} 
-                                caseTypes={caseTypes} 
-                                showNotification={showNotification}
-                            />
-                        )}
-                        
-                        {/* Submission Result */}
-                        {submittedRequest && <SubmissionResult request={submittedRequest} onNewRequest={() => setSubmittedRequest(null)} showNotification={showNotification} />}
-                        
-                        {/* Track Request */}
-                        {view === 'track' && (
-                            <TrackRequest 
-                                trackingId={trackingId} 
-                                setTrackingId={setTrackingId} 
-                                trackedRequest={trackedRequest} 
-                                setTrackedRequest={setTrackedRequest} 
-                                showNotification={showNotification}
-                            />
-                        )}
-                    </div>
-                </div>
+                React.createElement('div', { className: "min-h-screen flex items-center justify-center py-6 px-4" },
+                    React.createElement('div', { className: "max-w-md w-full" },
+                        React.createElement('div', { className: "text-center mb-8" },
+                            React.createElement('div', { className: "inline-block p-5 bg-white/80 backdrop-blur rounded-full mb-4 shadow-md" },
+                                React.createElement('span', { className: "text-5xl" }, "🔐")
+                            ),
+                            React.createElement('h1', { className: "text-3xl font-bold", style: { background: 'linear-gradient(135deg, #1e3a5f, #2c5a7a)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' } }, "تسجيل الدخول"),
+                            React.createElement('p', { className: "text-[#4a5b7a] mt-2" }, "نظام الصرف المتكامل - صندوق الحالات الطارئة")
+                        ),
+                        React.createElement('div', { className: "ios-card p-6 fade-in" },
+                            React.createElement('div', { className: "space-y-5" },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اختر اسم المستخدم"),
+                                    React.createElement('select', { 
+                                        className: "ios-input", 
+                                        value: selectedUser, 
+                                        onChange: (e) => setSelectedUser(e.target.value)
+                                    },
+                                        React.createElement('option', { value: "" }, "-- اختر اسم المستخدم --"),
+                                        allowedUsers.map(user => 
+                                            React.createElement('option', { key: user.name, value: user.name }, 
+                                                user.name + (user.role === 'developer' ? ' 👑 (مطور النظام)' : '')
+                                            )
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "كلمة المرور"),
+                                    React.createElement('div', { className: "relative" },
+                                        React.createElement('input', { 
+                                            type: showPassword ? "text" : "password",
+                                            className: "ios-input pl-12", 
+                                            value: password, 
+                                            onChange: (e) => setPassword(e.target.value),
+                                            onKeyPress: handleKeyPress,
+                                            placeholder: "أدخل كلمة المرور"
+                                        }),
+                                        React.createElement('button', {
+                                            type: "button",
+                                            onClick: () => setShowPassword(!showPassword),
+                                            className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8e9eae] hover:text-[#2b6e9e]"
+                                        }, showPassword ? "👁️" : "👁️‍🗨️")
+                                    )
+                                ),
+                                React.createElement('button', { 
+                                    onClick: handleLogin,
+                                    className: "w-full ios-button-primary py-4 rounded-2xl font-bold text-lg transition-all btn-press"
+                                }, "دخول"),
+                                React.createElement('div', { className: "text-center pt-4 border-t border-gray-100 mt-4" },
+                                    React.createElement('p', { className: "text-xs text-[#8e9eae]" }, "⚠️ هذا النظام خاص بالموظفين المصرح لهم فقط"),
+                                    React.createElement('div', { className: "developer-card mt-2" },
+                                        React.createElement('span', { className: "dev-name" }, "مطور النظام : عمرو مسعد الشجاع")
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
             );
         };
 
         // Request Form Component
-        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification }) => {
+        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification, currentUser }) => {
             const [formData, setFormData] = useState({
                 caseName: '',
                 caseDetails: '',
@@ -281,7 +317,8 @@
                 urgencyLevel: 'urgent',
                 incomeReport: '',
                 requestAmount: '',
-                preferredCurrency: 'yer'
+                preferredCurrency: 'yer',
+                submittedBy: currentUser.name
             });
             const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -301,7 +338,9 @@
                         location: geoInfo.location,
                         status: 'pending',
                         createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        votes: {}
+                        votes: {},
+                        submittedBy: currentUser.name,
+                        submittedByRole: currentUser.role
                     });
                     
                     showNotification('تم إرسال طلبك بنجاح!');
@@ -315,99 +354,93 @@
             };
 
             return (
-                <div className="ios-card card-primary p-6 fade-in">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">اسم الحالة *</label>
-                                <input type="text" required className="ios-input" 
-                                    value={formData.caseName} onChange={(e) => setFormData({...formData, caseName: e.target.value})}
-                                    placeholder="مثال: حالة عائلة أحمد" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">اسم مقدم الحالة *</label>
-                                <input type="text" required className="ios-input" 
-                                    value={formData.requesterName} onChange={(e) => setFormData({...formData, requesterName: e.target.value})}
-                                    placeholder="الاسم الكامل" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">نوع الحالة *</label>
-                            <select required className="ios-input" 
-                                value={formData.caseType} onChange={(e) => setFormData({...formData, caseType: e.target.value})}>
-                                <option value="">اختر نوع الحالة</option>
-                                {caseTypes.map(type => (
-                                    <option key={type.value} value={type.value}>{type.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">تفاصيل شاملة عن الحالة *</label>
-                            <textarea required rows="5" className="ios-input resize-none" 
-                                value={formData.caseDetails} onChange={(e) => setFormData({...formData, caseDetails: e.target.value})}
-                                placeholder="اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..."></textarea>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">تقرير شامل عن مستوى دخل الحالة *</label>
-                            <textarea required rows="4" className="ios-input resize-none" 
-                                value={formData.incomeReport} onChange={(e) => setFormData({...formData, incomeReport: e.target.value})}
-                                placeholder="صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..."></textarea>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">المبلغ المطلوب</label>
-                                <input type="number" className="ios-input" 
-                                    value={formData.requestAmount} onChange={(e) => setFormData({...formData, requestAmount: e.target.value})}
-                                    placeholder="المبلغ" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">العملة</label>
-                                <select className="ios-input" 
-                                    value={formData.preferredCurrency} onChange={(e) => setFormData({...formData, preferredCurrency: e.target.value})}>
-                                    <option value="yer">ريال يمني</option>
-                                    <option value="sar">ريال سعودي</option>
-                                    <option value="usd">دولار</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">التاريخ *</label>
-                                <input type="date" required className="ios-input" 
-                                    value={formData.requestDate} onChange={(e) => setFormData({...formData, requestDate: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">مستوى تقديم الطلب *</label>
-                                <div className="flex gap-4 pt-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" value="urgent" checked={formData.urgencyLevel === 'urgent'} 
-                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
-                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">مستعجل</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" value="notUrgent" checked={formData.urgencyLevel === 'notUrgent'} 
-                                            onChange={(e) => setFormData({...formData, urgencyLevel: e.target.value})} />
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">غير مستعجل</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#f7f9fe] p-3 rounded-2xl text-sm text-[#6b7c9e]">
-                            موقع التقديم الحالي: {geoInfo.location}
-                        </div>
-
-                        <button type="submit" disabled={isSubmitting} 
-                            className="w-full ios-button-primary py-4 rounded-2xl font-bold text-lg transition-all disabled:opacity-50 btn-press">
-                            {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
-                        </button>
-                    </form>
-                </div>
+                React.createElement('div', { className: "ios-card card-primary p-6 fade-in" },
+                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-5" },
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اسم الحالة *"),
+                                React.createElement('input', { type: "text", required: true, className: "ios-input", 
+                                    value: formData.caseName, onChange: (e) => setFormData({...formData, caseName: e.target.value}),
+                                    placeholder: "مثال: حالة عائلة أحمد" })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اسم مقدم الحالة *"),
+                                React.createElement('input', { type: "text", required: true, className: "ios-input", 
+                                    value: formData.requesterName, onChange: (e) => setFormData({...formData, requesterName: e.target.value}),
+                                    placeholder: "الاسم الكامل" })
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "نوع الحالة *"),
+                            React.createElement('select', { required: true, className: "ios-input", 
+                                value: formData.caseType, onChange: (e) => setFormData({...formData, caseType: e.target.value}) },
+                                React.createElement('option', { value: "" }, "اختر نوع الحالة"),
+                                caseTypes.map(type => React.createElement('option', { key: type.value, value: type.value }, type.label))
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "تفاصيل شاملة عن الحالة *"),
+                            React.createElement('textarea', { required: true, rows: "5", className: "ios-input resize-none", 
+                                value: formData.caseDetails, onChange: (e) => setFormData({...formData, caseDetails: e.target.value}),
+                                placeholder: "اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..." })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "تقرير شامل عن مستوى دخل الحالة *"),
+                            React.createElement('textarea', { required: true, rows: "4", className: "ios-input resize-none", 
+                                value: formData.incomeReport, onChange: (e) => setFormData({...formData, incomeReport: e.target.value}),
+                                placeholder: "صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..." })
+                        ),
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "المبلغ المطلوب"),
+                                React.createElement('input', { type: "number", className: "ios-input", 
+                                    value: formData.requestAmount, onChange: (e) => setFormData({...formData, requestAmount: e.target.value}),
+                                    placeholder: "المبلغ" })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "العملة"),
+                                React.createElement('select', { className: "ios-input", 
+                                    value: formData.preferredCurrency, onChange: (e) => setFormData({...formData, preferredCurrency: e.target.value}) },
+                                    React.createElement('option', { value: "yer" }, "ريال يمني"),
+                                    React.createElement('option', { value: "sar" }, "ريال سعودي"),
+                                    React.createElement('option', { value: "usd" }, "دولار")
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "التاريخ *"),
+                                React.createElement('input', { type: "date", required: true, className: "ios-input", 
+                                    value: formData.requestDate, onChange: (e) => setFormData({...formData, requestDate: e.target.value}) })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "مستوى تقديم الطلب *"),
+                                React.createElement('div', { className: "flex gap-4 pt-2" },
+                                    React.createElement('label', { className: "flex items-center gap-2 cursor-pointer" },
+                                        React.createElement('input', { type: "radio", value: "urgent", checked: formData.urgencyLevel === 'urgent', 
+                                            onChange: (e) => setFormData({...formData, urgencyLevel: e.target.value}) }),
+                                        React.createElement('span', { className: "px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold" }, "مستعجل")
+                                    ),
+                                    React.createElement('label', { className: "flex items-center gap-2 cursor-pointer" },
+                                        React.createElement('input', { type: "radio", value: "notUrgent", checked: formData.urgencyLevel === 'notUrgent', 
+                                            onChange: (e) => setFormData({...formData, urgencyLevel: e.target.value}) }),
+                                        React.createElement('span', { className: "px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold" }, "غير مستعجل")
+                                    )
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: "bg-[#f7f9fe] p-3 rounded-2xl text-sm text-[#6b7c9e]" },
+                            "موقع التقديم الحالي: ", geoInfo.location
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f4fa] p-3 rounded-2xl text-xs text-[#6b7c9e] text-center" },
+                            "تم تقديم الطلب بواسطة: ", currentUser.name, currentUser.role === 'developer' ? ' 👑' : ''
+                        ),
+                        React.createElement('button', { type: "submit", disabled: isSubmitting, 
+                            className: "w-full ios-button-primary py-4 rounded-2xl font-bold text-lg transition-all disabled:opacity-50 btn-press" },
+                            isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'
+                        )
+                    )
+                )
             );
         };
 
@@ -452,51 +485,34 @@
             const statusContent = getStatusContent();
 
             return (
-                <div className="ios-card p-8 text-center fade-in card-success">
-                    <div className={`inline-block p-4 ${statusContent.bg} rounded-2xl mb-6`}>
-                        <span className="text-5xl">{statusContent.icon}</span>
-                    </div>
-                    
-                    <h2 className={`text-2xl font-bold ${statusContent.color} mb-4`}>{statusContent.title}</h2>
-                    
-                    <p className="text-[#6b7c9e] mb-6">{statusContent.message}</p>
-                    
-                    <div className="bg-[#f7f9fe] rounded-2xl p-5 mb-6">
-                        <p className="text-sm text-[#6b7c9e] mb-2">رقم الطلب المرجعي:</p>
-                        <div className="flex items-center justify-center gap-3 flex-wrap">
-                            <p className="text-3xl font-mono font-bold text-[#2b6e9e]">
-                                {request.number}
-                            </p>
-                            <button 
-                                onClick={copyRequestNumber}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all btn-press ${
-                                    copySuccess ? 'bg-[#3c9e6d] text-white' : 'bg-[#eef2fa] text-[#2b6e9e] hover:bg-[#e2e8f2]'
-                                }`}
-                            >
-                                <span className="text-lg">{copySuccess ? '✓' : '📋'}</span>
-                                <span className="text-sm">{copySuccess ? 'تم النسخ' : 'نسخ الرقم'}</span>
-                            </button>
-                        </div>
-                        <p className="text-xs text-[#8e9eae] mt-3">احتفظ بهذا الرقم لمتابعة طلبك</p>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button onClick={onNewRequest} 
-                            className="flex-1 ios-button-primary py-3 rounded-xl font-bold btn-press">
-                            تقديم طلب جديد
-                        </button>
-                        <button onClick={() => window.location.reload()} 
-                            className="flex-1 bg-[#e9ecef] text-[#4a5b7a] py-3 rounded-xl font-bold btn-press">
-                            الصفحة الرئيسية
-                        </button>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t border-gray-100">
-                        <p className="text-xs text-[#8e9eae]">
-                            سيتم تحديث حالة الطلب تلقائياً عند المراجعة
-                        </p>
-                    </div>
-                </div>
+                React.createElement('div', { className: "ios-card p-8 text-center fade-in card-success" },
+                    React.createElement('div', { className: `inline-block p-4 ${statusContent.bg} rounded-2xl mb-6` },
+                        React.createElement('span', { className: "text-5xl" }, statusContent.icon)
+                    ),
+                    React.createElement('h2', { className: `text-2xl font-bold ${statusContent.color} mb-4` }, statusContent.title),
+                    React.createElement('p', { className: "text-[#6b7c9e] mb-6" }, statusContent.message),
+                    React.createElement('div', { className: "bg-[#f7f9fe] rounded-2xl p-5 mb-6" },
+                        React.createElement('p', { className: "text-sm text-[#6b7c9e] mb-2" }, "رقم الطلب المرجعي:"),
+                        React.createElement('div', { className: "flex items-center justify-center gap-3 flex-wrap" },
+                            React.createElement('p', { className: "text-3xl font-mono font-bold text-[#2b6e9e]" }, request.number),
+                            React.createElement('button', { 
+                                onClick: copyRequestNumber,
+                                className: `flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all btn-press ${copySuccess ? 'bg-[#3c9e6d] text-white' : 'bg-[#eef2fa] text-[#2b6e9e] hover:bg-[#e2e8f2]'}`
+                            },
+                                React.createElement('span', { className: "text-lg" }, copySuccess ? '✓' : '📋'),
+                                React.createElement('span', { className: "text-sm" }, copySuccess ? 'تم النسخ' : 'نسخ الرقم')
+                            )
+                        ),
+                        React.createElement('p', { className: "text-xs text-[#8e9eae] mt-3" }, "احتفظ بهذا الرقم لمتابعة طلبك")
+                    ),
+                    React.createElement('div', { className: "flex gap-3" },
+                        React.createElement('button', { onClick: onNewRequest, className: "flex-1 ios-button-primary py-3 rounded-xl font-bold btn-press" }, "تقديم طلب جديد"),
+                        React.createElement('button', { onClick: () => window.location.reload(), className: "flex-1 bg-[#e9ecef] text-[#4a5b7a] py-3 rounded-xl font-bold btn-press" }, "الصفحة الرئيسية")
+                    ),
+                    React.createElement('div', { className: "mt-6 pt-6 border-t border-gray-100" },
+                        React.createElement('p', { className: "text-xs text-[#8e9eae]" }, "سيتم تحديث حالة الطلب تلقائياً عند المراجعة")
+                    )
+                )
             );
         };
 
@@ -549,71 +565,159 @@
                 return types[typeValue] || typeValue;
             };
 
+            const statusDisplay = trackedRequest ? getStatusDisplay(trackedRequest.status) : { text: '', bg: '' };
+
             return (
-                <div className="ios-card p-6 fade-in card-primary">
-                    <h3 className="text-lg font-bold mb-5 text-center text-[#1e3a5f]">متابعة طلب مساعدة</h3>
-                    
-                    <div className="flex gap-3 mb-6">
-                        <input type="text" 
-                            placeholder="أدخل رقم الطلب (رقم مرجعي يبدأ من 100)" 
-                            className="ios-input text-left"
-                            dir="ltr"
-                            value={trackingId} 
-                            onChange={(e) => setTrackingId(e.target.value)} />
-                        <button onClick={checkStatus} disabled={isLoading}
-                            className="ios-button-primary px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[90px]">
-                            {isLoading ? 'جاري...' : 'بحث'}
-                        </button>
-                    </div>
+                React.createElement('div', { className: "ios-card p-6 fade-in card-primary" },
+                    React.createElement('h3', { className: "text-lg font-bold mb-5 text-center text-[#1e3a5f]" }, "متابعة طلب مساعدة"),
+                    React.createElement('div', { className: "flex gap-3 mb-6" },
+                        React.createElement('input', { type: "text", 
+                            placeholder: "أدخل رقم الطلب (رقم مرجعي يبدأ من 100)", 
+                            className: "ios-input text-left",
+                            dir: "ltr",
+                            value: trackingId, 
+                            onChange: (e) => setTrackingId(e.target.value) }),
+                        React.createElement('button', { onClick: checkStatus, disabled: isLoading,
+                            className: "ios-button-primary px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[90px]" },
+                            isLoading ? 'جاري...' : 'بحث')
+                    ),
+                    trackedRequest && React.createElement('div', { className: `rounded-2xl p-5 ${statusDisplay.bg} fade-in` },
+                        React.createElement('div', { className: "flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3" },
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: "font-bold text-lg text-[#1e3a5f]" }, trackedRequest.caseName),
+                                React.createElement('p', { className: "text-sm text-[#6b7c9e] mt-1" }, "مقدم الطلب: ", trackedRequest.requesterName)
+                            ),
+                            React.createElement('div', { className: "text-2xl" }, statusDisplay.text === 'قيد المراجعة' ? '⏳' : statusDisplay.text === 'تمت الموافقة' ? '✓' : '✗')
+                        ),
+                        React.createElement('div', { className: "space-y-3 text-sm" },
+                            React.createElement('p', null,
+                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "نوع الحالة: "),
+                                React.createElement('span', { className: "text-[#4a5b7a]" }, getCaseTypeLabel(trackedRequest.caseType))
+                            ),
+                            React.createElement('p', null,
+                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "تاريخ التقديم: "),
+                                React.createElement('span', { className: "text-[#4a5b7a]" }, trackedRequest.requestDate)
+                            ),
+                            trackedRequest.requestAmount && React.createElement('p', null,
+                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "المبلغ المطلوب: "),
+                                React.createElement('span', { className: "text-[#4a5b7a]" }, parseFloat(trackedRequest.requestAmount).toLocaleString(), 
+                                    trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي')
+                            ),
+                            React.createElement('p', null,
+                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "مستوى الاستعجال: "),
+                                trackedRequest.urgencyLevel === 'urgent' ? React.createElement('span', { className: "text-red-600" }, " مستعجل") : React.createElement('span', { className: "text-green-600" }, " غير مستعجل")
+                            ),
+                            React.createElement('div', { className: "bg-white/50 p-3 rounded-xl mt-2" },
+                                React.createElement('span', { className: "font-bold block mb-1 text-xs text-[#8e9eae]" }, "ملخص الحالة:"),
+                                React.createElement('p', { className: "text-[#4a5b7a] leading-relaxed whitespace-pre-line text-sm" }, trackedRequest.caseDetails)
+                            )
+                        ),
+                        React.createElement('div', { className: "mt-4 pt-3 border-t border-black/10 text-center" },
+                            React.createElement('p', { className: "text-sm font-bold text-[#1e3a5f]" }, "حالة الطلب الحالية: ", statusDisplay.text),
+                            trackedRequest.reviewedAt && React.createElement('p', { className: "text-xs text-[#8e9eae] mt-2" }, "تمت المراجعة بتاريخ: ", new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA'))
+                        )
+                    ),
+                    React.createElement('div', { className: "mt-6 text-center text-xs text-[#8e9eae]" },
+                        React.createElement('p', null, "سيتم تحديث هذه الصفحة فور مراجعة طلبك"),
+                        React.createElement('p', { className: "mt-1" }, "يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت")
+                    )
+                )
+            );
+        };
 
-                    {trackedRequest && (
-                        <div className={`rounded-2xl p-5 ${getStatusDisplay(trackedRequest.status).bg} fade-in`}>
-                            <div className="flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3">
-                                <div>
-                                    <h4 className="font-bold text-lg text-[#1e3a5f]">{trackedRequest.caseName}</h4>
-                                    <p className="text-sm text-[#6b7c9e] mt-1">مقدم الطلب: {trackedRequest.requesterName}</p>
-                                </div>
-                                <div className="text-2xl">{getStatusDisplay(trackedRequest.status).text === 'قيد المراجعة' ? '⏳' : getStatusDisplay(trackedRequest.status).text === 'تمت الموافقة' ? '✓' : '✗'}</div>
-                            </div>
-                            
-                            <div className="space-y-3 text-sm">
-                                <p><span className="font-bold text-[#1e3a5f]">نوع الحالة:</span> <span className="text-[#4a5b7a]">{getCaseTypeLabel(trackedRequest.caseType)}</span></p>
-                                <p><span className="font-bold text-[#1e3a5f]">تاريخ التقديم:</span> <span className="text-[#4a5b7a]">{trackedRequest.requestDate}</span></p>
-                                {trackedRequest.requestAmount && (
-                                    <p><span className="font-bold text-[#1e3a5f]">المبلغ المطلوب:</span> <span className="text-[#4a5b7a]">{parseFloat(trackedRequest.requestAmount).toLocaleString()} 
-                                        {trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي'}</span></p>
-                                )}
-                                <p><span className="font-bold text-[#1e3a5f]">مستوى الاستعجال:</span> 
-                                    {trackedRequest.urgencyLevel === 'urgent' ? <span className="text-red-600"> مستعجل</span> : <span className="text-green-600"> غير مستعجل</span>}</p>
-                                <div className="bg-white/50 p-3 rounded-xl mt-2">
-                                    <span className="font-bold block mb-1 text-xs text-[#8e9eae]">ملخص الحالة:</span>
-                                    <p className="text-[#4a5b7a] leading-relaxed whitespace-pre-line text-sm">{trackedRequest.caseDetails}</p>
-                                </div>
-                            </div>
+        // Main App Component
+        const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [currentUser, setCurrentUser] = useState(null);
+            const [view, setView] = useState('form');
+            const [submittedRequest, setSubmittedRequest] = useState(null);
+            const [trackingId, setTrackingId] = useState('');
+            const [trackedRequest, setTrackedRequest] = useState(null);
+            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
+            const [notification, setNotification] = useState(null);
 
-                            <div className="mt-4 pt-3 border-t border-black/10 text-center">
-                                <p className="text-sm font-bold text-[#1e3a5f]">
-                                    حالة الطلب الحالية: {getStatusDisplay(trackedRequest.status).text}
-                                </p>
-                                {trackedRequest.reviewedAt && (
-                                    <p className="text-xs text-[#8e9eae] mt-2">
-                                        تمت المراجعة بتاريخ: {new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA')}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
+            const showNotification = (message, type = 'success') => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 3000);
+            };
 
-                    <div className="mt-6 text-center text-xs text-[#8e9eae]">
-                        <p>سيتم تحديث هذه الصفحة فور مراجعة طلبك</p>
-                        <p className="mt-1">يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت</p>
-                    </div>
-                </div>
+            const handleLogin = (user) => {
+                setCurrentUser(user);
+                setIsLoggedIn(true);
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setCurrentUser(null);
+                setView('form');
+                setSubmittedRequest(null);
+                setTrackedRequest(null);
+                showNotification('تم تسجيل الخروج بنجاح');
+            };
+
+            useEffect(() => {
+                fetch('https://ipapi.co/json/')
+                    .then(res => res.json())
+                    .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
+                    .catch(() => setGeoInfo({ location: 'اليمن' }));
+            }, []);
+
+            useEffect(() => {
+                auth.signInAnonymously().catch(console.error);
+            }, []);
+
+            if (!isLoggedIn) {
+                return React.createElement(LoginScreen, { onLogin: handleLogin, showNotification: showNotification });
+            }
+
+            return (
+                React.createElement('div', { className: "min-h-screen py-6 px-4" },
+                    React.createElement('div', { className: "max-w-2xl mx-auto" },
+                        notification && React.createElement('div', { className: "toast-notification fade-in" },
+                            React.createElement('div', { className: `toast-content ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-[#2b6e9e] text-white'}` },
+                                React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('span', null, notification.type === 'error' ? '⚠️' : '✓'),
+                                    React.createElement('span', null, notification.message)
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                            React.createElement('div', { className: "flex items-center gap-2" },
+                                React.createElement('div', { className: "ios-badge bg-[#eef2fa] text-[#2b6e9e]" },
+                                    React.createElement('span', null, "👤"),
+                                    React.createElement('span', null, currentUser.name)
+                                ),
+                                currentUser.role === 'developer' && React.createElement('div', { className: "ios-badge dev-badge" },
+                                    React.createElement('span', null, "👑"),
+                                    React.createElement('span', null, currentUser.title)
+                                )
+                            ),
+                            React.createElement('button', { onClick: handleLogout, className: "ios-badge bg-red-50 text-red-600 hover:bg-red-100 transition-all btn-press" },
+                                React.createElement('span', null, "🚪"),
+                                React.createElement('span', null, "خروج")
+                            )
+                        ),
+                        React.createElement('div', { className: "text-center mb-8" },
+                            React.createElement('div', { className: "inline-block p-4 bg-white/80 backdrop-blur rounded-full mb-4 shadow-md" },
+                                React.createElement('span', { className: "text-5xl" }, "📝")
+                            ),
+                            React.createElement('h1', { className: "text-3xl font-bold", style: { background: 'linear-gradient(135deg, #1e3a5f, #2c5a7a)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' } }, "تقديم طلب مساعدة"),
+                            React.createElement('p', { className: "text-[#4a5b7a] mt-2" }, "نظام الصرف المتكامل - صندوق الحالات الطارئة")
+                        ),
+                        React.createElement('div', { className: "flex gap-3 mb-6" },
+                            React.createElement('button', { onClick: () => { setView('form'); setSubmittedRequest(null); }, className: `flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}` }, "تقديم طلب جديد"),
+                            React.createElement('button', { onClick: () => { setView('track'); setTrackedRequest(null); }, className: `flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}` }, "متابعة طلب")
+                        ),
+                        view === 'form' && !submittedRequest && React.createElement(RequestForm, { onSubmit: (requestId, requestNumber) => setSubmittedRequest({ id: requestId, number: requestNumber, status: 'pending' }), geoInfo: geoInfo, caseTypes: caseTypes, showNotification: showNotification, currentUser: currentUser }),
+                        submittedRequest && React.createElement(SubmissionResult, { request: submittedRequest, onNewRequest: () => setSubmittedRequest(null), showNotification: showNotification }),
+                        view === 'track' && React.createElement(TrackRequest, { trackingId: trackingId, setTrackingId: setTrackingId, trackedRequest: trackedRequest, setTrackedRequest: setTrackedRequest, showNotification: showNotification })
+                    )
+                )
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(React.createElement(App, null));
     </script>
 </body>
 </html>
