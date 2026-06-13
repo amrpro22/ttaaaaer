@@ -3,721 +3,1014 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>تقديم طلب مساعدة - نظام الصرف المتكامل</title>
-    
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>نظام التصويت | لجنة المساعدات - محبران</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
-        
         * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+        body {
+            font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(145deg, #f0f4fc 0%, #e6edf6 100%);
             min-height: 100vh;
-            margin: 0;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            direction: rtl;
         }
-        
-        .ios-card {
+
+        .container {
+            max-width: 750px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .system-header-card {
+            background: linear-gradient(135deg, #1e3a5f, #2c5a8c);
+            border-radius: 28px;
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .system-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .system-subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            display: inline-block;
+            padding-top: 8px;
+            margin-top: 6px;
+        }
+        .monitor-text {
+            font-size: 12px;
+            color: #ffd966;
+            margin-top: 12px;
+            font-weight: 500;
+            background: rgba(0,0,0,0.2);
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 50px;
+        }
+        .support-link {
+            margin-top: 14px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.15);
+            padding: 8px 12px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+        .support-link a {
+            color: #ffd966;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .card {
             background: #ffffff;
-            border-radius: 32px;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
-            transition: all 0.25s ease;
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(110, 120, 150, 0.12);
-            overflow: hidden;
-        }
-        
-        .ios-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 24px 42px -14px rgba(0, 0, 0, 0.12);
-        }
-        
-        .card-primary {
-            background: linear-gradient(135deg, #ffffff 0%, #fefcff 100%);
             border-top: 4px solid #5b8cce;
         }
-        
-        .card-success {
-            background: linear-gradient(115deg, #f6f9ff 0%, #ffffff 100%);
-            border-right: 4px solid #3c9e6d;
-        }
-        
-        .btn-press:active { transform: scale(0.97); transition: transform 0.05s; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .status-pending { background: #fff8ed; border-right: 4px solid #e2a14f; }
-        .status-approved { background: #edf7f0; border-right: 4px solid #3c9e6d; }
-        .status-rejected { background: #feeceb; border-right: 4px solid #bc3f2e; }
-        
-        .ios-button-primary {
-            background: #2b6e9e;
-            color: white;
-            border-radius: 18px;
-            font-weight: 590;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(43, 110, 158, 0.2);
-        }
-        
-        .ios-button-primary:active {
-            background: #1f5480;
-            transform: scale(0.98);
-        }
-        
-        .ios-input {
-            border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            padding: 12px 16px;
-            width: 100%;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-        
-        .ios-input:focus {
-            outline: none;
-            border-color: #5b8cce;
-            box-shadow: 0 0 0 3px rgba(91, 140, 206, 0.1);
-        }
-        
-        .ios-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
-        }
-        
-        .toast-content {
-            background: #1c2c48;
-            backdrop-filter: blur(12px);
-            border-radius: 60px;
-            padding: 14px 24px;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-            pointer-events: auto;
-            font-weight: 500;
-        }
-        
-        .dev-badge {
-            background: linear-gradient(135deg, #d4af37, #f5d76e);
+
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            text-align: center;
             color: #1e3a5f;
         }
-        
-        .developer-card {
-            background: linear-gradient(135deg, #1e3a5f, #2c5a7a);
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4a5b7a;
+        }
+
+        .required-star {
+            color: #c23d2b;
+            margin-right: 4px;
+        }
+
+        .voter-input, .voter-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dce3ec;
+            border-radius: 14px;
+            font-size: 14px;
+            background: #fdfdfd;
+            font-family: inherit;
+            transition: 0.2s;
+            text-align: right;
+        }
+
+        .voter-select {
+            cursor: pointer;
+            background: #fdfdfd;
+        }
+
+        .voter-input:focus, .voter-select:focus {
+            outline: none;
+            border-color: #6b8fbd;
+            box-shadow: 0 0 0 3px rgba(87, 118, 157, 0.1);
+        }
+
+        .voter-input.error-border, .voter-select.error-border {
+            border-color: #c23d2b;
+            background-color: #fff5f5;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: #2c5a8c;
+            color: white;
+            box-shadow: 0 4px 12px rgba(44, 90, 140, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #1e3a5f;
+            transform: translateY(-1px);
+        }
+
+        .vote-options {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .opt-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #eef2f8;
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+
+        .opt-btn.selected-approve {
+            background: #e3f7ec;
+            border-color: #2b7a48;
+            color: #1f7840;
+        }
+
+        .opt-btn.selected-reject {
+            background: #ffe9e9;
+            border-color: #c23d2b;
+            color: #bc3f2e;
+        }
+
+        .info-box {
+            background: #f7f9fe;
+            border-radius: 18px;
+            padding: 16px;
+            margin: 12px 0;
+            border: 1px solid #e4ebf5;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #dce3ec;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .info-item:last-child { 
+            border: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .info-label { 
+            font-weight: 600; 
+            color: #1e3a5f; 
+            min-width: 110px;
+            font-size: 13px;
+        }
+
+        .info-value { 
+            color: #2c3e50; 
+            flex: 1;
+            text-align: left;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .info-value.amount {
+            color: #2b7a48;
+            font-weight: 600;
+        }
+
+        .status-msg {
+            padding: 14px 18px;
             border-radius: 16px;
-            padding: 6px 12px;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-msg.error { background: #feeceb; color: #b13b2a; border-right: 4px solid #bc3f2e; }
+        .status-msg.success { background: #e2f3e8; color: #1a6e42; border-right: 4px solid #2b7a48; }
+        .status-msg.warning { background: #fff3e0; color: #c07a3a; border-right: 4px solid #e2a14f; }
+        .status-msg.info { background: #e8f0fe; color: #2c5a8c; border-right: 4px solid #5b8cce; }
+        .status-msg.duplicate { background: #f0e6ff; color: #6b3fa0; border-right: 4px solid #8b5cf6; }
+        .status-msg.ip-track { background: #ffe0e0; color: #991b1b; border-right: 4px solid #dc2626; }
+        .status-msg.violation { background: #fff0f0; color: #c23d2b; border-right: 4px solid #c23d2b; font-weight: bold; }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            background: linear-gradient(135deg, #1e3a5f, #2b4a6e);
+            border-radius: 50px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .footer-line {
+            margin: 4px 0;
+        }
+
+        .footer-line:first-child { font-weight: 500; }
+        .footer-line:last-child { font-size: 11px; opacity: 0.85; }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2c5a8c;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            animation: spin 1s linear infinite;
             display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-pending { background: #fff3e0; color: #c07a3a; }
+        .status-approved { background: #e3f7ec; color: #1f7840; }
+        .status-rejected { background: #feeceb; color: #bc3f2e; }
+
+        .urgency-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .urgency-urgent { background: #feeceb; color: #bc3f2e; }
+        .urgency-normal { background: #e3f7ec; color: #1f7840; }
+
+        .password-hint {
+            font-size: 11px;
+            color: #8e8e93;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .integrity-message-card {
+            background: linear-gradient(135deg, #fff8e7, #fff3df);
+            border-radius: 20px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+            border-right: 5px solid #d4a017;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+        }
+        .integrity-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #8b6914;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .integrity-text {
+            font-size: 13px;
+            line-height: 1.65;
+            color: #4a3b1a;
+            font-weight: 500;
+        }
+        .integrity-text strong {
+            color: #b8860b;
+        }
+        .integrity-badge {
+            display: inline-block;
+            background: #e8dbbd;
+            border-radius: 30px;
+            padding: 3px 12px;
+            font-size: 11px;
             margin-top: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(212, 175, 55, 0.25);
+            color: #5e3a0c;
         }
-        
-        .developer-card span {
-            color: #f5d76e;
-            font-weight: 500;
-            font-size: 11px;
+
+        .voters-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 13px;
         }
-        
-        .developer-card .dev-name {
-            color: #ffffff;
+        .voters-table th {
+            background: #e8f0fe;
+            padding: 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #1e3a5f;
+            border-radius: 8px;
+        }
+        .voters-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #e4ebf5;
+        }
+        .voter-approve {
+            color: #1f7840;
             font-weight: 500;
-            font-size: 11px;
-            letter-spacing: 0.3px;
+            background: #e3f7ec;
+            border-radius: 20px;
+            display: inline-block;
+            padding: 3px 12px;
+        }
+        .voter-reject {
+            color: #bc3f2e;
+            font-weight: 500;
+            background: #ffe9e9;
+            border-radius: 20px;
+            display: inline-block;
+            padding: 3px 12px;
+        }
+        .section-title-voters {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #5b8cce;
+            display: inline-block;
+        }
+        .case-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-right: 4px solid #2c5a8c;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .case-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 550px) {
+            .info-label { min-width: 80px; font-size: 12px; }
+            .info-value { font-size: 12px; }
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <div class="container">
+        
+        <div class="system-header-card">
+            <div class="system-title">نظام التصويت الإلكتروني الشامل</div>
+            <div class="system-subtitle">لجنة المساعدات - التصويت الآمن والنزيه</div>
+            <div class="monitor-text">يتم مراقبة الأصوات من قبل الإدارة بشكل دائم</div>
+            <div class="support-link">
+                إذا واجهتك أي مشكلة، تحدث مع <a href="#" onclick="contactDeveloper()">مطور النظام</a>
+            </div>
+        </div>
 
-        // Firebase Config
+        <!-- شاشة الدخول -->
+        <div id="loginSection" class="card">
+            <h1>تسجيل دخول للتصويت</h1>
+            <div class="input-group">
+                <label class="input-label">اختر اسم العضو <span class="required-star">*</span></label>
+                <select id="voterNameSelect" class="voter-select">
+                    <option value="">-- اختر العضو --</option>
+                    <option value="فايز احمد العمامي">فايز احمد العمامي</option>
+                    <option value="عبد الناصر عادل الجحدري">عبد الناصر عادل الجحدري</option>
+                    <option value="علي محمد أحمد">علي محمد أحمد</option>
+                    <option value="عبدالرحمن علي الشجاع">عبدالرحمن علي الشجاع</option>
+                    <option value="مجدي عبده علي ثابت">مجدي عبده علي ثابت</option>
+                    <option value="معمر علي علي ثابث">معمر علي علي ثابث</option>
+                    <option value="محمد عبده علي السمه">محمد عبده علي السمه</option>
+                    <option value="علي عبده الحاج السمه">علي عبده الحاج السمه</option>
+                    <option value="ناصر محمد الشجاع">ناصر محمد الشجاع</option>
+                    <option value="علي عبده مسعد الشجاع">علي عبده مسعد الشجاع</option>
+                    <option value="احمد بن احمد الشجاع">احمد بن احمد الشجاع</option>
+                    <option value="مجيد علي الشجاع">مجيد علي الشجاع</option>
+                    <option value="عمار مطهر الشجاع">عمار مطهر الشجاع</option>
+                    <option value="محمد محمد الحاج الشجاع">محمد محمد الحاج الشجاع</option>
+                    <option value="نبيل أحمد مصلح الشجاع">نبيل أحمد مصلح الشجاع</option>
+                    <option value="مفيد عبده أحمد الغزالي">مفيد عبده أحمد الغزالي</option>
+                    <option value="محمد ناجي محمد صالح الشجاع">محمد ناجي محمد صالح الشجاع</option>
+                    <option value="مصطفى محمد علي الشجاع">مصطفى محمد علي الشجاع</option>
+                    <option value="ياسر محمد احمد الشجاع">ياسر محمد احمد الشجاع</option>
+                    <option value="عمرو مسعد الشجاع">عمرو مسعد الشجاع</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label class="input-label">كلمة المرور (الرقم السري) <span class="required-star">*</span></label>
+                <input type="password" id="voterPassword" class="voter-input" placeholder="أدخل الرقم السري الخاص بك">
+                <div class="password-hint">كلمة المرور هي التي تم ارسالها لك من قبل المشرف</div>
+            </div>
+            
+            <div class="integrity-message-card">
+                <div class="integrity-title">
+                    <span>أمانة القرار وعدالة التصويت</span>
+                </div>
+                <div class="integrity-text">
+                    <strong>"إن الله يأمركم أن تؤدوا الأمانات إلى أهلها"</strong><br><br>
+                    عند الإدلاء بصوتك، تذكر أن قرارك يجب أن يكون <strong>خالياً من أي انحياز أو تأثر بالعلاقات الشخصية</strong>.
+                    صوتك هو أمانة أمام الله ثم أمام المستحقين الذين ينتظرون حكمك العادل.
+                    <div class="integrity-badge">صوتك = أمانة · التصويت مرة واحدة فقط · النزاهة فوق كل اعتبار</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="verifyAndLogin()">دخول</button>
+            <div id="loginMsg"></div>
+        </div>
+
+        <!-- شاشة اختيار الحالة للتصويت -->
+        <div id="selectCaseSection" class="card hidden">
+            <h1>الحالات المحولة للتصويت</h1>
+            <div id="casesList" class="info-box"></div>
+            <button class="btn" style="background: #f0f0f0; color: #666;" onclick="goBackToLogin()">تسجيل خروج</button>
+            <div id="selectCaseMsg"></div>
+        </div>
+
+        <!-- شاشة تفاصيل الحالة والتصويت -->
+        <div id="voteSection" class="card hidden">
+            <h1>تفاصيل حالة المساعدة</h1>
+            <div id="caseDetails" class="info-box"></div>
+            <div id="votersTableSection"></div>
+            <div>
+                <div class="section-title-voters">تصويت اللجنة</div>
+                <h3 style="font-size: 15px; color: #4a5b7a; margin: 12px 0 8px 0;">رأيك في الحالة:</h3>
+                <div class="vote-options">
+                    <button id="btnApprove" class="opt-btn" onclick="selectOption('موافق')">موافق</button>
+                    <button id="btnReject" class="opt-btn" onclick="selectOption('غير موافق')">غير موافق</button>
+                </div>
+                <button class="btn btn-primary" id="btnSubmitVote" onclick="submitFinalVote()">إرسال التصويت</button>
+                <button class="btn" style="background: #f0f0f0; color: #666;" onclick="goBackToSelect()">العودة للقائمة</button>
+                <div id="voteMsg"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-line">المشرف العام : مصطفى الشجاع</div>
+            <div class="footer-line">تطوير النظام : عمرو مسعد الشجاع</div>
+        </div>
+    </div>
+
+    <script>
+        // قائمة المستخدمين المسجلين مع كلمات المرور
+        const usersList = [
+            { name: "فايز احمد العمامي", password: "1001" },
+            { name: "عبد الناصر عادل الجحدري", password: "1002" },
+            { name: "علي محمد أحمد", password: "1003" },
+            { name: "عبدالرحمن علي الشجاع", password: "1004" },
+            { name: "مجدي عبده علي ثابت", password: "1005" },
+            { name: "معمر علي علي ثابث", password: "1006" },
+            { name: "محمد عبده علي السمه", password: "1007" },
+            { name: "علي عبده الحاج السمه", password: "1008" },
+            { name: "ناصر محمد الشجاع", password: "1009" },
+            { name: "علي عبده مسعد الشجاع", password: "1010" },
+            { name: "احمد بن احمد الشجاع", password: "1011" },
+            { name: "مجيد علي الشجاع", password: "1012" },
+            { name: "عمار مطهر الشجاع", password: "1013" },
+            { name: "محمد محمد الحاج الشجاع", password: "1014" },
+            { name: "نبيل أحمد مصلح الشجاع", password: "1015" },
+            { name: "مفيد عبده أحمد الغزالي", password: "1016" },
+            { name: "محمد ناجي محمد صالح الشجاع", password: "1017" },
+            { name: "مصطفى محمد علي الشجاع", password: "1018" },
+            { name: "ياسر محمد احمد الشجاع", password: "1019" },
+            { name: "عمرو مسعد الشجاع", password: "1020" }
+        ];
+
+        // Firebase Config - قاعدة بيانات مستقلة لنظام التصويت
         const firebaseConfig = {
             apiKey: "AIzaSyBzX7_q2Abx0pL9L5aMvzJ6I3hDdc8bXy8",
             authDomain: "magdi-50c75.firebaseapp.com",
             databaseURL: "https://magdi-50c75-default-rtdb.firebaseio.com",
             projectId: "magdi-50c75",
             storageBucket: "magdi-50c75.firebasestorage.app",
-            messagingSenderId: "329518389376",
             appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
-
-        // بيانات المستخدمين المسموح لهم
-        const allowedUsers = [
-            { name: "مصطفى الشجاع", password: "1111", role: "user" },
-            { name: "مجدي عبده علي", password: "1112", role: "user" },
-            { name: "ياسر الشجاع", password: "1113", role: "user" },
-            { name: "عمرو مسعد الشجاع", password: "1993", role: "developer", title: "مطور النظام - تحكم كامل" }
-        ];
-
-        // Types of cases
-        const caseTypes = [
-            { value: 'accident', label: 'حادث' },
-            { value: 'disease', label: 'مرض' },
-            { value: 'treatment', label: 'علاج' },
-            { value: 'travelTreatment', label: 'سفر للعلاج' },
-            { value: 'zakatCharity', label: 'صدقة من مال الزكاة' },
-            { value: 'financialAid', label: 'مساعدة مالية' },
-            { value: 'other', label: 'أخرى' }
-        ];
-
-        // عداد ثابت لبدء أرقام الطلبات من 100
-        const SEQUENCE_KEY = 'requestSequenceCounter';
-        
-        async function getNextRequestNumber() {
-            const sequenceRef = database.ref(SEQUENCE_KEY);
-            let currentNumber = 100;
-            
-            const result = await sequenceRef.transaction((currentValue) => {
-                if (currentValue === null) {
-                    return currentNumber;
-                }
-                return currentValue + 1;
-            });
-            
-            if (result.snapshot && result.snapshot.val() !== null) {
-                return result.snapshot.val();
+        // تهيئة Firebase
+        let app;
+        try {
+            if (!firebase.apps.length) {
+                app = firebase.initializeApp(firebaseConfig);
+            } else {
+                app = firebase.app();
             }
-            return currentNumber;
+        } catch(e) {
+            console.error("خطأ في تهيئة Firebase:", e);
+        }
+        
+        const rtDb = firebase.database();
+        const auth = firebase.auth();
+        const APP_PATH = "amr4admin";
+
+        let currentCaseData = null;
+        let selectedVote = null;
+        let voterInfo = { name: '', caseId: '', ip: '' };
+        let votingCasesList = [];
+
+        async function ensureFirebaseAuth() {
+            if (!auth.currentUser) {
+                await auth.signInAnonymously();
+            }
+            return auth.currentUser;
         }
 
-        // Component Login
-        const LoginScreen = ({ onLogin, showNotification }) => {
-            const [selectedUser, setSelectedUser] = useState('');
-            const [password, setPassword] = useState('');
-            const [showPassword, setShowPassword] = useState(false);
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error('فشل في جلب IP:', error);
+                return 'غير معروف';
+            }
+        }
 
-            const handleLogin = () => {
-                if (!selectedUser) {
-                    showNotification('الرجاء اختيار اسم المستخدم', 'error');
-                    return;
-                }
-                
-                const user = allowedUsers.find(u => u.name === selectedUser);
-                if (!user) {
-                    showNotification('المستخدم غير موجود', 'error');
-                    return;
-                }
-                
-                if (password !== user.password) {
-                    showNotification('كلمة المرور غير صحيحة', 'error');
-                    return;
-                }
-                
-                onLogin(user);
-                showNotification(`مرحباً ${user.name}`, 'success');
-            };
-
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter') {
-                    handleLogin();
-                }
-            };
-
-            return (
-                React.createElement('div', { className: "min-h-screen flex items-center justify-center py-6 px-4" },
-                    React.createElement('div', { className: "max-w-md w-full" },
-                        React.createElement('div', { className: "text-center mb-8" },
-                            React.createElement('div', { className: "inline-block p-5 bg-white/80 backdrop-blur rounded-full mb-4 shadow-md" },
-                                React.createElement('span', { className: "text-5xl" }, "🔐")
-                            ),
-                            React.createElement('h1', { className: "text-3xl font-bold", style: { background: 'linear-gradient(135deg, #1e3a5f, #2c5a7a)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' } }, "تسجيل الدخول"),
-                            React.createElement('p', { className: "text-[#4a5b7a] mt-2" }, "نظام الصرف المتكامل - صندوق الحالات الطارئة")
-                        ),
-                        React.createElement('div', { className: "ios-card p-6 fade-in" },
-                            React.createElement('div', { className: "space-y-5" },
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اختر اسم المستخدم"),
-                                    React.createElement('select', { 
-                                        className: "ios-input", 
-                                        value: selectedUser, 
-                                        onChange: (e) => setSelectedUser(e.target.value)
-                                    },
-                                        React.createElement('option', { value: "" }, "-- اختر اسم المستخدم --"),
-                                        allowedUsers.map(user => 
-                                            React.createElement('option', { key: user.name, value: user.name }, 
-                                                user.name + (user.role === 'developer' ? '  (مطور النظام)' : '')
-                                            )
-                                        )
-                                    )
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "كلمة المرور"),
-                                    React.createElement('div', { className: "relative" },
-                                        React.createElement('input', { 
-                                            type: showPassword ? "text" : "password",
-                                            className: "ios-input pl-12", 
-                                            value: password, 
-                                            onChange: (e) => setPassword(e.target.value),
-                                            onKeyPress: handleKeyPress,
-                                            placeholder: "أدخل كلمة المرور"
-                                        }),
-                                        React.createElement('button', {
-                                            type: "button",
-                                            onClick: () => setShowPassword(!showPassword),
-                                            className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8e9eae] hover:text-[#2b6e9e]"
-                                        }, showPassword ? "👁️" : "👁️‍🗨️")
-                                    )
-                                ),
-                                React.createElement('button', { 
-                                    onClick: handleLogin,
-                                    className: "w-full ios-button-primary py-4 rounded-2xl font-bold text-lg transition-all btn-press"
-                                }, "دخول"),
-                                React.createElement('div', { className: "text-center pt-4 border-t border-gray-100 mt-4" },
-                                    React.createElement('p', { className: "text-xs text-[#8e9eae]" }, "⚠️ هذا النظام خاص بالموظفين المصرح لهم فقط"),
-                                    React.createElement('div', { className: "developer-card mt-2" },
-                                        React.createElement('span', { className: "dev-name" }, "مطور النظام : عمرو مسعد الشجاع")
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            );
+        window.contactDeveloper = function() {
+            alert("📞 يمكنك التواصل مع مطور النظام:\nعمرو مسعد الشجاع\nعبر القنوات المخصصة للإدارة.\nسيتم الرد عليك في أقرب وقت.");
         };
 
-        // Request Form Component
-        const RequestForm = ({ onSubmit, geoInfo, caseTypes, showNotification, currentUser }) => {
-            const [formData, setFormData] = useState({
-                caseName: '',
-                caseDetails: '',
-                caseType: '',
-                requesterName: '',
-                requestDate: new Date().toISOString().split('T')[0],
-                urgencyLevel: 'urgent',
-                incomeReport: '',
-                requestAmount: '',
-                preferredCurrency: 'yer',
-                submittedBy: currentUser.name
-            });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setIsSubmitting(true);
-                
-                try {
-                    const requestNumber = await getNextRequestNumber();
-                    const newRequestRef = database.ref('assistanceRequests').push();
-                    const requestId = newRequestRef.key;
-                    
-                    await newRequestRef.set({
-                        ...formData,
-                        requestId: requestId,
-                        requestNumber: requestNumber,
-                        location: geoInfo.location,
-                        status: 'pending',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        votes: {},
-                        submittedBy: currentUser.name,
-                        submittedByRole: currentUser.role
-                    });
-                    
-                    showNotification('تم إرسال طلبك بنجاح!');
-                    onSubmit(requestId, requestNumber);
-                } catch (error) {
-                    console.error(error);
-                    showNotification('حدث خطأ في إرسال الطلب، يرجى المحاولة لاحقاً', 'error');
-                } finally {
-                    setIsSubmitting(false);
-                }
-            };
-
-            return (
-                React.createElement('div', { className: "ios-card card-primary p-6 fade-in" },
-                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-5" },
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اسم الحالة *"),
-                                React.createElement('input', { type: "text", required: true, className: "ios-input", 
-                                    value: formData.caseName, onChange: (e) => setFormData({...formData, caseName: e.target.value}),
-                                    placeholder: "مثال: حالة عائلة أحمد" })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "اسم مقدم الحالة *"),
-                                React.createElement('input', { type: "text", required: true, className: "ios-input", 
-                                    value: formData.requesterName, onChange: (e) => setFormData({...formData, requesterName: e.target.value}),
-                                    placeholder: "الاسم الكامل" })
-                            )
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "نوع الحالة *"),
-                            React.createElement('select', { required: true, className: "ios-input", 
-                                value: formData.caseType, onChange: (e) => setFormData({...formData, caseType: e.target.value}) },
-                                React.createElement('option', { value: "" }, "اختر نوع الحالة"),
-                                caseTypes.map(type => React.createElement('option', { key: type.value, value: type.value }, type.label))
-                            )
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "تفاصيل شاملة عن الحالة *"),
-                            React.createElement('textarea', { required: true, rows: "5", className: "ios-input resize-none", 
-                                value: formData.caseDetails, onChange: (e) => setFormData({...formData, caseDetails: e.target.value}),
-                                placeholder: "اذكر جميع التفاصيل المتعلقة بالحالة بشكل دقيق..." })
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "تقرير شامل عن مستوى دخل الحالة *"),
-                            React.createElement('textarea', { required: true, rows: "4", className: "ios-input resize-none", 
-                                value: formData.incomeReport, onChange: (e) => setFormData({...formData, incomeReport: e.target.value}),
-                                placeholder: "صف مصادر الدخل، عدد أفراد الأسرة، الظروف المادية، الالتزامات الشهرية..." })
-                        ),
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "المبلغ المطلوب"),
-                                React.createElement('input', { type: "number", className: "ios-input", 
-                                    value: formData.requestAmount, onChange: (e) => setFormData({...formData, requestAmount: e.target.value}),
-                                    placeholder: "المبلغ" })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "العملة"),
-                                React.createElement('select', { className: "ios-input", 
-                                    value: formData.preferredCurrency, onChange: (e) => setFormData({...formData, preferredCurrency: e.target.value}) },
-                                    React.createElement('option', { value: "yer" }, "ريال يمني"),
-                                    React.createElement('option', { value: "sar" }, "ريال سعودي"),
-                                    React.createElement('option', { value: "usd" }, "دولار")
-                                )
-                            )
-                        ),
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "التاريخ *"),
-                                React.createElement('input', { type: "date", required: true, className: "ios-input", 
-                                    value: formData.requestDate, onChange: (e) => setFormData({...formData, requestDate: e.target.value}) })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-semibold text-[#1e3a5f] mb-2" }, "مستوى تقديم الطلب *"),
-                                React.createElement('div', { className: "flex gap-4 pt-2" },
-                                    React.createElement('label', { className: "flex items-center gap-2 cursor-pointer" },
-                                        React.createElement('input', { type: "radio", value: "urgent", checked: formData.urgencyLevel === 'urgent', 
-                                            onChange: (e) => setFormData({...formData, urgencyLevel: e.target.value}) }),
-                                        React.createElement('span', { className: "px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold" }, "مستعجل")
-                                    ),
-                                    React.createElement('label', { className: "flex items-center gap-2 cursor-pointer" },
-                                        React.createElement('input', { type: "radio", value: "notUrgent", checked: formData.urgencyLevel === 'notUrgent', 
-                                            onChange: (e) => setFormData({...formData, urgencyLevel: e.target.value}) }),
-                                        React.createElement('span', { className: "px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold" }, "غير مستعجل")
-                                    )
-                                )
-                            )
-                        ),
-                        React.createElement('div', { className: "bg-[#f7f9fe] p-3 rounded-2xl text-sm text-[#6b7c9e]" },
-                            "موقع التقديم الحالي: ", geoInfo.location
-                        ),
-                        React.createElement('div', { className: "bg-[#f0f4fa] p-3 rounded-2xl text-xs text-[#6b7c9e] text-center" },
-                            "تم تقديم الطلب بواسطة: ", currentUser.name, currentUser.role === 'developer' ? ' 👑' : ''
-                        ),
-                        React.createElement('button', { type: "submit", disabled: isSubmitting, 
-                            className: "w-full ios-button-primary py-4 rounded-2xl font-bold text-lg transition-all disabled:opacity-50 btn-press" },
-                            isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'
-                        )
-                    )
-                )
-            );
+        const caseTypeLabels = {
+            'accident': 'حادث',
+            'disease': 'مرض',
+            'treatment': 'علاج',
+            'travelTreatment': 'سفر للعلاج',
+            'marriage': 'زواج',
+            'zakatCharity': 'صدقة زكاة',
+            'financialAid': 'مساعدة مالية',
+            'other': 'أخرى'
         };
 
-        // Submission Result Component
-        const SubmissionResult = ({ request, onNewRequest, showNotification }) => {
-            const [currentStatus, setCurrentStatus] = useState(request.status);
-            const [copySuccess, setCopySuccess] = useState(false);
-            
-            useEffect(() => {
-                const statusRef = database.ref(`assistanceRequests/${request.id}/status`);
-                const unsubscribe = statusRef.on('value', (snapshot) => {
-                    const status = snapshot.val();
-                    if (status) setCurrentStatus(status);
-                });
-                return () => statusRef.off();
-            }, [request.id]);
+        function showFieldError(inputId) {
+            const element = document.getElementById(inputId);
+            element.classList.add('error-border');
+            setTimeout(() => element.classList.remove('error-border'), 2000);
+        }
 
-            const copyRequestNumber = () => {
-                const requestNumber = request.number;
-                navigator.clipboard.writeText(requestNumber.toString()).then(() => {
-                    setCopySuccess(true);
-                    showNotification('تم نسخ رقم الطلب بنجاح!');
-                    setTimeout(() => setCopySuccess(false), 2000);
-                }).catch(() => {
-                    showNotification('فشل نسخ الرقم، حاول يدوياً', 'error');
-                });
-            };
+        function clearFieldError(inputId) {
+            const element = document.getElementById(inputId);
+            element.classList.remove('error-border');
+        }
 
-            const getStatusContent = () => {
-                switch(currentStatus) {
-                    case 'pending':
-                        return { icon: '⏳', title: 'قيد المراجعة', color: 'text-[#e2a14f]', bg: 'bg-[#fff8ed]', message: 'تم استلام طلبك بنجاح، وهو قيد المراجعة من قبل الفريق المسؤول' };
-                    case 'approved':
-                        return { icon: '✓', title: 'تمت الموافقة على الطلب', color: 'text-[#3c9e6d]', bg: 'bg-[#edf7f0]', message: 'تمت الموافقة على طلبك، سيتم التواصل معك قريباً' };
-                    case 'rejected':
-                        return { icon: '✗', title: 'تم رفض الطلب', color: 'text-[#bc3f2e]', bg: 'bg-[#feeceb]', message: 'نأسف لرفض طلبك، يمكنك التواصل مع الإدارة لمعرفة الأسباب' };
-                    default:
-                        return { icon: '⏳', title: 'قيد المراجعة', color: 'text-[#e2a14f]', bg: 'bg-[#fff8ed]', message: 'جاري مراجعة طلبك' };
-                }
-            };
+        function goBackToLogin() {
+            document.getElementById('selectCaseSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('loginMsg').innerHTML = '';
+            document.getElementById('voterNameSelect').value = '';
+            document.getElementById('voterPassword').value = '';
+            selectedVote = null;
+            currentCaseData = null;
+            votingCasesList = [];
+        }
 
-            const statusContent = getStatusContent();
+        function goBackToSelect() {
+            document.getElementById('voteSection').classList.add('hidden');
+            document.getElementById('selectCaseSection').classList.remove('hidden');
+            selectedVote = null;
+            document.getElementById('voteMsg').innerHTML = '';
+            document.getElementById('btnApprove').className = 'opt-btn';
+            document.getElementById('btnReject').className = 'opt-btn';
+            document.getElementById('btnSubmitVote').disabled = false;
+            document.getElementById('btnSubmitVote').style.opacity = '1';
+        }
 
-            return (
-                React.createElement('div', { className: "ios-card p-8 text-center fade-in card-success" },
-                    React.createElement('div', { className: `inline-block p-4 ${statusContent.bg} rounded-2xl mb-6` },
-                        React.createElement('span', { className: "text-5xl" }, statusContent.icon)
-                    ),
-                    React.createElement('h2', { className: `text-2xl font-bold ${statusContent.color} mb-4` }, statusContent.title),
-                    React.createElement('p', { className: "text-[#6b7c9e] mb-6" }, statusContent.message),
-                    React.createElement('div', { className: "bg-[#f7f9fe] rounded-2xl p-5 mb-6" },
-                        React.createElement('p', { className: "text-sm text-[#6b7c9e] mb-2" }, "رقم الطلب المرجعي:"),
-                        React.createElement('div', { className: "flex items-center justify-center gap-3 flex-wrap" },
-                            React.createElement('p', { className: "text-3xl font-mono font-bold text-[#2b6e9e]" }, request.number),
-                            React.createElement('button', { 
-                                onClick: copyRequestNumber,
-                                className: `flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all btn-press ${copySuccess ? 'bg-[#3c9e6d] text-white' : 'bg-[#eef2fa] text-[#2b6e9e] hover:bg-[#e2e8f2]'}`
-                            },
-                                React.createElement('span', { className: "text-lg" }, copySuccess ? '✓' : '📋'),
-                                React.createElement('span', { className: "text-sm" }, copySuccess ? 'تم النسخ' : 'نسخ الرقم')
-                            )
-                        ),
-                        React.createElement('p', { className: "text-xs text-[#8e9eae] mt-3" }, "احتفظ بهذا الرقم لمتابعة طلبك")
-                    ),
-                    React.createElement('div', { className: "flex gap-3" },
-                        React.createElement('button', { onClick: onNewRequest, className: "flex-1 ios-button-primary py-3 rounded-xl font-bold btn-press" }, "تقديم طلب جديد"),
-                        React.createElement('button', { onClick: () => window.location.reload(), className: "flex-1 bg-[#e9ecef] text-[#4a5b7a] py-3 rounded-xl font-bold btn-press" }, "الصفحة الرئيسية")
-                    ),
-                    React.createElement('div', { className: "mt-6 pt-6 border-t border-gray-100" },
-                        React.createElement('p', { className: "text-xs text-[#8e9eae]" }, "سيتم تحديث حالة الطلب تلقائياً عند المراجعة")
-                    )
-                )
-            );
-        };
+        function verifyAndLogin() {
+            const selectedName = document.getElementById('voterNameSelect').value;
+            const password = document.getElementById('voterPassword').value.trim();
+            const msg = document.getElementById('loginMsg');
 
-        // Track Request Component
-        const TrackRequest = ({ trackingId, setTrackingId, trackedRequest, setTrackedRequest, showNotification }) => {
-            const [isLoading, setIsLoading] = useState(false);
+            let hasError = false;
+            if (!selectedName) { showFieldError('voterNameSelect'); hasError = true; }
+            else { clearFieldError('voterNameSelect'); }
+            if (!password) { showFieldError('voterPassword'); hasError = true; }
+            else { clearFieldError('voterPassword'); }
 
-            const checkStatus = async () => {
-                if (!trackingId.trim()) {
-                    showNotification('الرجاء إدخال رقم الطلب أولاً', 'error');
-                    return;
-                }
-                setIsLoading(true);
-                
-                const requestsRef = database.ref('assistanceRequests');
-                requestsRef.orderByChild('requestNumber').equalTo(parseInt(trackingId.trim())).once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const requestKey = Object.keys(data)[0];
-                        const requestData = data[requestKey];
-                        setTrackedRequest({ id: requestKey, number: requestData.requestNumber, ...requestData });
-                        showNotification('تم العثور على الطلب بنجاح!');
-                    } else {
-                        showNotification('لم يتم العثور على الرقم المرجعي للطلب', 'error');
-                        setTrackedRequest(null);
-                    }
-                    setIsLoading(false);
-                }).catch((error) => {
-                    console.error(error);
-                    showNotification('حدث خطأ في البحث', 'error');
-                    setIsLoading(false);
-                });
-            };
-
-            const getStatusDisplay = (status) => {
-                switch(status) {
-                    case 'pending': return { text: 'قيد المراجعة', bg: 'status-pending' };
-                    case 'approved': return { text: 'تمت الموافقة', bg: 'status-approved' };
-                    case 'rejected': return { text: 'تم الرفض', bg: 'status-rejected' };
-                    default: return { text: 'قيد المراجعة', bg: 'status-pending' };
-                }
-            };
-
-            const getCaseTypeLabel = (typeValue) => {
-                const types = {
-                    'accident': 'حادث', 'disease': 'مرض', 'treatment': 'علاج',
-                    'travelTreatment': 'سفر للعلاج', 'marriage': 'زواج',
-                    'zakatCharity': 'صدقة زكاة', 'financialAid': 'مساعدة مالية', 'other': 'أخرى'
-                };
-                return types[typeValue] || typeValue;
-            };
-
-            const statusDisplay = trackedRequest ? getStatusDisplay(trackedRequest.status) : { text: '', bg: '' };
-
-            return (
-                React.createElement('div', { className: "ios-card p-6 fade-in card-primary" },
-                    React.createElement('h3', { className: "text-lg font-bold mb-5 text-center text-[#1e3a5f]" }, "متابعة طلب مساعدة"),
-                    React.createElement('div', { className: "flex gap-3 mb-6" },
-                        React.createElement('input', { type: "text", 
-                            placeholder: "أدخل رقم الطلب (رقم مرجعي يبدأ من 100)", 
-                            className: "ios-input text-left",
-                            dir: "ltr",
-                            value: trackingId, 
-                            onChange: (e) => setTrackingId(e.target.value) }),
-                        React.createElement('button', { onClick: checkStatus, disabled: isLoading,
-                            className: "ios-button-primary px-6 py-3 rounded-xl font-bold btn-press disabled:opacity-50 min-w-[90px]" },
-                            isLoading ? 'جاري...' : 'بحث')
-                    ),
-                    trackedRequest && React.createElement('div', { className: `rounded-2xl p-5 ${statusDisplay.bg} fade-in` },
-                        React.createElement('div', { className: "flex justify-between items-start mb-4 flex-wrap gap-2 border-b border-black/10 pb-3" },
-                            React.createElement('div', null,
-                                React.createElement('h4', { className: "font-bold text-lg text-[#1e3a5f]" }, trackedRequest.caseName),
-                                React.createElement('p', { className: "text-sm text-[#6b7c9e] mt-1" }, "مقدم الطلب: ", trackedRequest.requesterName)
-                            ),
-                            React.createElement('div', { className: "text-2xl" }, statusDisplay.text === 'قيد المراجعة' ? '⏳' : statusDisplay.text === 'تمت الموافقة' ? '✓' : '✗')
-                        ),
-                        React.createElement('div', { className: "space-y-3 text-sm" },
-                            React.createElement('p', null,
-                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "نوع الحالة: "),
-                                React.createElement('span', { className: "text-[#4a5b7a]" }, getCaseTypeLabel(trackedRequest.caseType))
-                            ),
-                            React.createElement('p', null,
-                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "تاريخ التقديم: "),
-                                React.createElement('span', { className: "text-[#4a5b7a]" }, trackedRequest.requestDate)
-                            ),
-                            trackedRequest.requestAmount && React.createElement('p', null,
-                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "المبلغ المطلوب: "),
-                                React.createElement('span', { className: "text-[#4a5b7a]" }, parseFloat(trackedRequest.requestAmount).toLocaleString(), 
-                                    trackedRequest.preferredCurrency === 'sar' ? ' ر.س' : trackedRequest.preferredCurrency === 'usd' ? ' $' : ' ي.ي')
-                            ),
-                            React.createElement('p', null,
-                                React.createElement('span', { className: "font-bold text-[#1e3a5f]" }, "مستوى الاستعجال: "),
-                                trackedRequest.urgencyLevel === 'urgent' ? React.createElement('span', { className: "text-red-600" }, " مستعجل") : React.createElement('span', { className: "text-green-600" }, " غير مستعجل")
-                            ),
-                            React.createElement('div', { className: "bg-white/50 p-3 rounded-xl mt-2" },
-                                React.createElement('span', { className: "font-bold block mb-1 text-xs text-[#8e9eae]" }, "ملخص الحالة:"),
-                                React.createElement('p', { className: "text-[#4a5b7a] leading-relaxed whitespace-pre-line text-sm" }, trackedRequest.caseDetails)
-                            )
-                        ),
-                        React.createElement('div', { className: "mt-4 pt-3 border-t border-black/10 text-center" },
-                            React.createElement('p', { className: "text-sm font-bold text-[#1e3a5f]" }, "حالة الطلب الحالية: ", statusDisplay.text),
-                            trackedRequest.reviewedAt && React.createElement('p', { className: "text-xs text-[#8e9eae] mt-2" }, "تمت المراجعة بتاريخ: ", new Date(trackedRequest.reviewedAt).toLocaleDateString('ar-SA'))
-                        )
-                    ),
-                    React.createElement('div', { className: "mt-6 text-center text-xs text-[#8e9eae]" },
-                        React.createElement('p', null, "سيتم تحديث هذه الصفحة فور مراجعة طلبك"),
-                        React.createElement('p', { className: "mt-1" }, "يمكنك استخدام نفس الرقم لمتابعة حالة الطلب في أي وقت")
-                    )
-                )
-            );
-        };
-
-        // Main App Component
-        const App = () => {
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
-            const [currentUser, setCurrentUser] = useState(null);
-            const [view, setView] = useState('form');
-            const [submittedRequest, setSubmittedRequest] = useState(null);
-            const [trackingId, setTrackingId] = useState('');
-            const [trackedRequest, setTrackedRequest] = useState(null);
-            const [geoInfo, setGeoInfo] = useState({ location: 'جاري التحديد...' });
-            const [notification, setNotification] = useState(null);
-
-            const showNotification = (message, type = 'success') => {
-                setNotification({ message, type });
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            const handleLogin = (user) => {
-                setCurrentUser(user);
-                setIsLoggedIn(true);
-            };
-
-            const handleLogout = () => {
-                setIsLoggedIn(false);
-                setCurrentUser(null);
-                setView('form');
-                setSubmittedRequest(null);
-                setTrackedRequest(null);
-                showNotification('تم تسجيل الخروج بنجاح');
-            };
-
-            useEffect(() => {
-                fetch('https://ipapi.co/json/')
-                    .then(res => res.json())
-                    .then(data => setGeoInfo({ location: data.country_name || 'السعودية/اليمن' }))
-                    .catch(() => setGeoInfo({ location: 'اليمن' }));
-            }, []);
-
-            useEffect(() => {
-                auth.signInAnonymously().catch(console.error);
-            }, []);
-
-            if (!isLoggedIn) {
-                return React.createElement(LoginScreen, { onLogin: handleLogin, showNotification: showNotification });
+            if (hasError) {
+                msg.innerHTML = '<div class="status-msg error">يرجى ملء جميع الحقول الإجبارية</div>';
+                return;
             }
 
-            return (
-                React.createElement('div', { className: "min-h-screen py-6 px-4" },
-                    React.createElement('div', { className: "max-w-2xl mx-auto" },
-                        notification && React.createElement('div', { className: "toast-notification fade-in" },
-                            React.createElement('div', { className: `toast-content ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-[#2b6e9e] text-white'}` },
-                                React.createElement('div', { className: "flex items-center gap-3" },
-                                    React.createElement('span', null, notification.type === 'error' ? '⚠️' : '✓'),
-                                    React.createElement('span', null, notification.message)
-                                )
-                            )
-                        ),
-                        React.createElement('div', { className: "flex justify-between items-center mb-6" },
-                            React.createElement('div', { className: "flex items-center gap-2" },
-                                React.createElement('div', { className: "ios-badge bg-[#eef2fa] text-[#2b6e9e]" },
-                                    React.createElement('span', null, "👤"),
-                                    React.createElement('span', null, currentUser.name)
-                                ),
-                                currentUser.role === 'developer' && React.createElement('div', { className: "ios-badge dev-badge" },
-                                    React.createElement('span', null, "👑"),
-                                    React.createElement('span', null, currentUser.title)
-                                )
-                            ),
-                            React.createElement('button', { onClick: handleLogout, className: "ios-badge bg-red-50 text-red-600 hover:bg-red-100 transition-all btn-press" },
-                                React.createElement('span', null, "🚪"),
-                                React.createElement('span', null, "خروج")
-                            )
-                        ),
-                        React.createElement('div', { className: "text-center mb-8" },
-                            React.createElement('div', { className: "inline-block p-4 bg-white/80 backdrop-blur rounded-full mb-4 shadow-md" },
-                                React.createElement('span', { className: "text-5xl" }, "📝")
-                            ),
-                            React.createElement('h1', { className: "text-3xl font-bold", style: { background: 'linear-gradient(135deg, #1e3a5f, #2c5a7a)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' } }, "تقديم طلب مساعدة"),
-                            React.createElement('p', { className: "text-[#4a5b7a] mt-2" }, "نظام الصرف المتكامل - صندوق الحالات الطارئة")
-                        ),
-                        React.createElement('div', { className: "flex gap-3 mb-6" },
-                            React.createElement('button', { onClick: () => { setView('form'); setSubmittedRequest(null); }, className: `flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'form' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}` }, "تقديم طلب جديد"),
-                            React.createElement('button', { onClick: () => { setView('track'); setTrackedRequest(null); }, className: `flex-1 py-3 rounded-2xl font-bold transition-all btn-press ${view === 'track' ? 'bg-[#2b6e9e] text-white shadow-md' : 'bg-white/80 text-[#4a5b7a] border border-gray-200'}` }, "متابعة طلب")
-                        ),
-                        view === 'form' && !submittedRequest && React.createElement(RequestForm, { onSubmit: (requestId, requestNumber) => setSubmittedRequest({ id: requestId, number: requestNumber, status: 'pending' }), geoInfo: geoInfo, caseTypes: caseTypes, showNotification: showNotification, currentUser: currentUser }),
-                        submittedRequest && React.createElement(SubmissionResult, { request: submittedRequest, onNewRequest: () => setSubmittedRequest(null), showNotification: showNotification }),
-                        view === 'track' && React.createElement(TrackRequest, { trackingId: trackingId, setTrackingId: setTrackingId, trackedRequest: trackedRequest, setTrackedRequest: setTrackedRequest, showNotification: showNotification })
-                    )
-                )
-            );
-        };
+            const validUser = usersList.find(user => user.name === selectedName && user.password === password);
+            if (!validUser) {
+                msg.innerHTML = '<div class="status-msg error">الاسم أو كلمة المرور غير صحيحة</div>';
+                return;
+            }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App, null));
+            msg.innerHTML = '<div class="loader"></div> جاري التحقق والتحميل...';
+            proceedWithLogin(selectedName, msg);
+        }
+
+        async function proceedWithLogin(name, msgElement) {
+            try {
+                const userIP = await getUserIP();
+                voterInfo = { name, caseId: '', ip: userIP };
+                await ensureFirebaseAuth();
+                
+                // التحقق من الاتصال بقاعدة البيانات أولاً
+                const testRef = rtDb.ref('.info/connected');
+                const connected = await new Promise((resolve) => {
+                    testRef.once('value', (snap) => resolve(true));
+                    setTimeout(() => resolve(false), 3000);
+                });
+                
+                if (!connected) {
+                    msgElement.innerHTML = '<div class="status-msg error">⚠️ لا يمكن الاتصال بقاعدة البيانات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.</div>';
+                    return;
+                }
+                
+                // جلب الحالات المحولة للتصويت من مسار لوحة التحكم
+                const votingRef = rtDb.ref(`${APP_PATH}/voting_submissions`);
+                let votingSnapshot;
+                try {
+                    votingSnapshot = await votingRef.once('value');
+                } catch(e) {
+                    console.error("خطأ في جلب voting_submissions:", e);
+                    msgElement.innerHTML = '<div class="status-msg error">حدث خطأ في قراءة قاعدة البيانات. تأكد من صحة المسارات.</div>';
+                    return;
+                }
+                
+                const votingData = votingSnapshot.val() || {};
+                
+                const votingCaseIds = [];
+                for (const [key, votingItem] of Object.entries(votingData)) {
+                    if (votingItem && votingItem.originalId) {
+                        votingCaseIds.push(votingItem.originalId);
+                    }
+                }
+                
+                if (votingCaseIds.length === 0) {
+                    msgElement.innerHTML = '<div class="status-msg warning">لا توجد حالات تم تحويلها للتصويت حالياً</div>';
+                    return;
+                }
+                
+                // جلب جميع طلبات المساعدة من مسار لوحة التحكم
+                const requestsRef = rtDb.ref(`assistanceRequests`);
+                let requestsSnapshot;
+                try {
+                    requestsSnapshot = await requestsRef.once('value');
+                } catch(e) {
+                    console.error("خطأ في جلب assistanceRequests:", e);
+                    msgElement.innerHTML = '<div class="status-msg error">حدث خطأ في قراءة قاعدة البيانات. تأكد من صحة المسارات.</div>';
+                    return;
+                }
+                
+                const allCases = requestsSnapshot.val() || {};
+                
+                const validVotingCases = [];
+                for (const [id, caseData] of Object.entries(allCases)) {
+                    if (votingCaseIds.includes(id) && caseData.status === 'pending') {
+                        const votes = caseData.votes || {};
+                        let alreadyVoted = false;
+                        for (const [voterName, voteData] of Object.entries(votes)) {
+                            if (voterName === name) {
+                                alreadyVoted = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyVoted) {
+                            validVotingCases.push({ id, ...caseData });
+                        }
+                    }
+                }
+                
+                if (validVotingCases.length === 0) {
+                    msgElement.innerHTML = '<div class="status-msg warning">لا توجد حالات متاحة للتصويت حالياً (إما قمت بالتصويت عليها مسبقاً أو لا توجد حالات محولة)</div>';
+                    return;
+                }
+                
+                votingCasesList = validVotingCases;
+                displayCasesList();
+                msgElement.innerHTML = '';
+                
+            } catch (error) {
+                console.error("خطأ في proceedWithLogin:", error);
+                msgElement.innerHTML = '<div class="status-msg error">حدث خطأ في الاتصال بقاعدة البيانات: ' + error.message + '</div>';
+            }
+        }
+
+        function displayCasesList() {
+            document.getElementById('loginSection').classList.add('hidden');
+            const selectSection = document.getElementById('selectCaseSection');
+            selectSection.classList.remove('hidden');
+            
+            const casesDiv = document.getElementById('casesList');
+            
+            if (votingCasesList.length === 0) {
+                casesDiv.innerHTML = '<div class="status-msg warning">لا توجد حالات محولة للتصويت</div>';
+                return;
+            }
+            
+            let casesHtml = '';
+            votingCasesList.forEach((caseData, index) => {
+                const borderColors = ['#2c5a8c', '#c07a3a', '#2b7a48', '#8b5cf6', '#bc3f2e'];
+                const colorIndex = index % borderColors.length;
+                casesHtml += `
+                    <div class="case-card" style="border-right-color: ${borderColors[colorIndex]};" onclick="selectCase('${caseData.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <div style="font-weight: 700; color: #1e3a5f; margin-bottom: 6px;">${escapeHtml(caseData.caseName) || 'بدون اسم'}</div>
+                                <div style="font-size: 12px; color: #6c6c70;">مقدم الطلب: ${escapeHtml(caseData.requesterName) || 'غير محدد'}</div>
+                                <div style="font-size: 12px; color: #6c6c70;">نوع الحالة: ${caseTypeLabels[caseData.caseType] || caseData.caseType || 'غير محدد'}</div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 700; color: #2b7a48;">${(caseData.requestAmount || 0).toLocaleString()} ${caseData.preferredCurrency === 'sar' ? 'ر.س' : caseData.preferredCurrency === 'usd' ? '$' : 'ر.ي'}</div>
+                                <div style="font-size: 11px; color: #8e8e93; margin-top: 4px;">${caseData.requestDate || 'تاريخ غير محدد'}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #5b8cce;">اضغط لاختيار هذه الحالة</div>
+                    </div>
+                `;
+            });
+            
+            casesDiv.innerHTML = casesHtml;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        async function selectCase(caseId) {
+            const msg = document.getElementById('selectCaseMsg');
+            msg.innerHTML = '<div class="loader"></div> جاري تحميل تفاصيل الحالة...';
+            
+            try {
+                await ensureFirebaseAuth();
+                const snapshot = await rtDb.ref(`assistanceRequests/${caseId}`).once('value');
+                if (snapshot.exists()) {
+                    currentCaseData = snapshot.val();
+                    currentCaseData.id = caseId;
+                    voterInfo.caseId = caseId;
+                    displayCase();
+                    displayVotersList();
+                    msg.innerHTML = '';
+                    document.getElementById('selectCaseSection').classList.add('hidden');
+                    document.getElementById('voteSection').classList.remove('hidden');
+                    selectedVote = null;
+                    document.getElementById('btnApprove').className = 'opt-btn';
+                    document.getElementById('btnReject').className = 'opt-btn';
+                    document.getElementById('voteMsg').innerHTML = '';
+                    document.getElementById('btnSubmitVote').disabled = false;
+                    document.getElementById('btnSubmitVote').style.opacity = '1';
+                    document.getElementById('btnApprove').disabled = false;
+                    document.getElementById('btnReject').disabled = false;
+                } else {
+                    msg.innerHTML = '<div class="status-msg error">حدث خطأ في تحميل تفاصيل الحالة</div>';
+                }
+            } catch (error) {
+                console.error(error);
+                msg.innerHTML = '<div class="status-msg error">حدث خطأ في الاتصال بقاعدة البيانات</div>';
+            }
+        }
+
+        function displayVotersList() {
+            const votersDiv = document.getElementById('votersTableSection');
+            if (votersDiv) votersDiv.innerHTML = '';
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return 'قيد المراجعة';
+                case 'approved': return 'مقبول';
+                case 'rejected': return 'مرفوض';
+                default: return status || 'غير محدد';
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'pending': return 'status-pending';
+                case 'approved': return 'status-approved';
+                case 'rejected': return 'status-rejected';
+                default: return '';
+            }
+        }
+
+        function getCurrencyText(currency) {
+            if (currency === 'sar') return 'ريال سعودي';
+            if (currency === 'usd') return 'دولار أمريكي';
+            return 'ريال يمني';
+        }
+
+        function getCaseTypeText(type) {
+            return caseTypeLabels[type] || type || 'غير محدد';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'غير محدد';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch(e) {
+                return dateString;
+            }
+        }
+
+        function displayCase() {
+            const data = currentCaseData;
+            const detailsDiv = document.getElementById('caseDetails');
+
+            detailsDiv.innerHTML = `
+                <div class="info-item"><span class="info-label">رقم الحالة:</span><span class="info-value">${data.id || voterInfo.caseId}</span></div>
+                <div class="info-item"><span class="info-label">اسم الحالة:</span><span class="info-value">${escapeHtml(data.caseName) || 'غير محدد'}</span></div>
+                <div class="info-item"><span class="info-label">مقدم الطلب:</span><span class="info-value">${escapeHtml(data.requesterName) || 'غير محدد'}</span></div>
+                <div class="info-item"><span class="info-label">نوع الحالة:</span><span class="info-value">${getCaseTypeText(data.caseType)}</span></div>
+                <div class="info-item"><span class="info-label">تفاصيل الحالة:</span><span class="info-value">${escapeHtml(data.caseDetails) || 'لا توجد تفاصيل إضافية'}</span></div>
+                <div class="info-item"><span class="info-label">المبلغ المطلوب:</span><span class="info-value amount">${(data.requestAmount || 0).toLocaleString()} ${getCurrencyText(data.preferredCurrency)}</span></div>
+                <div class="info-item"><span class="info-label">العملة المفضلة:</span><span class="info-value">${getCurrencyText(data.preferredCurrency)}</span></div>
+                <div class="info-item"><span class="info-label">تقرير الدخل:</span><span class="info-value">${escapeHtml(data.incomeReport) || 'لا يوجد تقرير دخل'}</span></div>
+                <div class="info-item"><span class="info-label">مستوى الاستعجال:</span><span class="info-value"><span class="urgency-badge ${data.urgencyLevel === 'urgent' ? 'urgency-urgent' : 'urgency-normal'}">${data.urgencyLevel === 'urgent' ? 'مستعجل' : 'غير مستعجل'}</span></span></div>
+                <div class="info-item"><span class="info-label">تاريخ التقديم:</span><span class="info-value">${formatDate(data.requestDate)}</span></div>
+                <div class="info-item"><span class="info-label">موقع التقديم:</span><span class="info-value">${escapeHtml(data.location) || 'غير محدد'}</span></div>
+                <div class="info-item"><span class="info-label">حالة الطلب:</span><span class="info-value"><span class="status-badge ${getStatusClass(data.status)}">${getStatusText(data.status)}</span></span></div>
+            `;
+        }
+
+        function selectOption(val) {
+            selectedVote = val;
+            const btnApprove = document.getElementById('btnApprove');
+            const btnReject = document.getElementById('btnReject');
+
+            if (val === 'موافق') {
+                btnApprove.className = 'opt-btn selected-approve';
+                btnReject.className = 'opt-btn';
+            } else {
+                btnReject.className = 'opt-btn selected-reject';
+                btnApprove.className = 'opt-btn';
+            }
+        }
+
+        async function submitFinalVote() {
+            const msg = document.getElementById('voteMsg');
+            
+            if (!selectedVote) {
+                msg.innerHTML = '<div class="status-msg error">يرجى اختيار موافق أو غير موافق أولاً</div>';
+                return;
+            }
+
+            if (currentCaseData.status !== 'pending') {
+                msg.innerHTML = '<div class="status-msg error">لا يمكن التصويت على هذه الحالة لأنها تمت مراجعتها مسبقاً</div>';
+                return;
+            }
+
+            await ensureFirebaseAuth();
+            const votesRef = rtDb.ref(`assistanceRequests/${voterInfo.caseId}/votes`);
+            const snapshot = await votesRef.once('value');
+            const votes = snapshot.val() || {};
+            
+            // التحقق من التصويت المسبق بنفس الاسم
+            if (votes[voterInfo.name]) {
+                msg.innerHTML = '<div class="status-msg violation">⚠️ ⚠️ ⚠️ تحذير: تم تسجيل مخالفة ضدك ⚠️ ⚠️ ⚠️<br>لقد قمت بالتصويت على هذه الحالة مسبقاً بنفس الاسم.<br><strong>سيتم تقديم المخالفة إلى مجلس الإدارة لاتخاذ الإجراء المناسب.</strong></div>';
+                document.getElementById('btnSubmitVote').disabled = true;
+                document.getElementById('btnSubmitVote').style.opacity = '0.5';
+                
+                // تسجيل المخالفة في قاعدة البيانات
+                try {
+                    const violationsRef = rtDb.ref(`${APP_PATH}/voting_violations`);
+                    await violationsRef.push().set({
+                        voterName: voterInfo.name,
+                        caseId: voterInfo.caseId,
+                        caseName: currentCaseData.caseName,
+                        violationType: 'محاولة تصويت مكرر',
+                        ip: voterInfo.ip,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        reportedTo: 'مجلس الإدارة'
+                    });
+                } catch(e) { console.error(e); }
+                return;
+            }
+            
+            // التحقق من التصويت المسبق بنفس الجهاز
+            let ipDuplicate = false;
+            for (const [key, value] of Object.entries(votes)) {
+                if (value && value.ip === voterInfo.ip && voterInfo.ip !== 'غير معروف') {
+                    ipDuplicate = true;
+                    break;
+                }
+            }
+            
+            if (ipDuplicate) {
+                msg.innerHTML = '<div class="status-msg violation">⚠️ ⚠️ ⚠️ تحذير: تم تسجيل مخالفة ضدك ⚠️ ⚠️ ⚠️<br>تم رصد تصويت سابق من نفس الجهاز. ممنوع تكرار التصويت.<br><strong>سيتم تقديم المخالفة إلى مجلس الإدارة لاتخاذ الإجراء المناسب.</strong></div>';
+                document.getElementById('btnSubmitVote').disabled = true;
+                document.getElementById('btnSubmitVote').style.opacity = '0.5';
+                
+                try {
+                    const violationsRef = rtDb.ref(`${APP_PATH}/voting_violations`);
+                    await violationsRef.push().set({
+                        voterName: voterInfo.name,
+                        caseId: voterInfo.caseId,
+                        caseName: currentCaseData.caseName,
+                        violationType: 'محاولة تصويت من نفس الجهاز',
+                        ip: voterInfo.ip,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        reportedTo: 'مجلس الإدارة'
+                    });
+                } catch(e) { console.error(e); }
+                return;
+            }
+
+            try {
+                await rtDb.ref(`assistanceRequests/${voterInfo.caseId}/votes/${voterInfo.name}`).set({
+                    vote: selectedVote,
+                    ip: voterInfo.ip,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                msg.innerHTML = '<div class="status-msg success">✅ تم إرسال تصويتك بنجاح. شكراً لك على نزاهتك وأمانتك في اتخاذ القرار.</div>';
+                document.getElementById('btnSubmitVote').disabled = true;
+                document.getElementById('btnSubmitVote').style.opacity = '0.5';
+                document.getElementById('btnApprove').disabled = true;
+                document.getElementById('btnReject').disabled = true;
+
+                // تحديث جدول المصوتين
+                displayVotersList();
+
+                votingCasesList = votingCasesList.filter(c => c.id !== voterInfo.caseId);
+                
+                setTimeout(() => {
+                    goBackToSelect();
+                    const casesDiv = document.getElementById('casesList');
+                    if (votingCasesList.length === 0) {
+                        casesDiv.innerHTML = '<div class="status-msg info">🎉 شكراً لك! لقد قمت بالتصويت على جميع الحالات المتاحة. لا توجد حالات متبقية للتصويت.</div>';
+                    } else {
+                        displayCasesList();
+                    }
+                }, 1500);
+
+            } catch (error) {
+                console.error(error);
+                msg.innerHTML = '<div class="status-msg error">حدث خطأ أثناء إرسال التصويت</div>';
+            }
+        }
     </script>
 </body>
 </html>
