@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -5,9 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>نظام التصويت | لجنة المساعدات - محبران</title>
     
-    <!-- Google Fonts & Tailwind CSS -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- SF Pro Display Font (Apple Pro) for English/Numbers -->
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
     
     <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -22,6 +25,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -34,32 +38,45 @@
                         radial-gradient(circle at bottom left, rgba(215, 157, 37, 0.13), transparent 30%),
                         linear-gradient(180deg, #eef7f6 0%, #f7fafc 44%, #edf2f7 100%);
             color: #122033;
-            font-family: 'Cairo', sans-serif;
+            /* استخدام خطوط آبل (Apple Pro / SF Arabic) */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Arabic", "Apple Pro", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
-            padding: 18px 20px;
+            -moz-osx-font-smoothing: grayscale;
+            padding: 12px 8px; /* تقليل الهوامش الخارجية لتناسب الهواتف الصغيرة جداً */
             display: flex;
             justify-content: center;
+            align-items: flex-start;
         }
 
+        @media (min-width: 480px) {
+            body {
+                padding: 24px 16px;
+            }
+        }
+
+        /* تثبيت حجم حاوية التطبيق الرئيسية كشاشة هاتف ذكي أنيقة (Max 500px) لمنع التمدد */
         .app-card {
             width: 100%;
-            max-width: 750px;
+            max-width: 500px; /* جعل العرض مثالياً للهواتف ومتناسقاً على الشاشات الكبيرة */
             min-width: 0;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.92);
-            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 32px;
             overflow: hidden;
-            box-shadow: 0 24px 70px rgba(16, 42, 67, 0.15);
+            box-shadow: 0 20px 50px rgba(16, 42, 67, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
+        /* تحسين بطاقة الهيدر لتناسب الشاشات الصغيرة والكبيرة */
         .system-header-card {
             background: linear-gradient(135deg, #102a43, #0f766e);
-            border-radius: 28px;
-            padding: 24px 20px;
-            margin: 20px 20px 20px 20px;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
+            border-radius: 24px;
+            padding: 22px 18px;
+            margin: 14px;
+            box-shadow: 0 12px 28px -8px rgba(15, 118, 110, 0.3);
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             position: relative;
             isolation: isolate;
             overflow: hidden;
@@ -67,11 +84,11 @@
         .system-header-card::before {
             content: "";
             position: absolute;
-            width: 170px;
-            height: 170px;
-            right: -62px;
-            top: -76px;
-            background: rgba(255, 255, 255, 0.12);
+            width: 130px;
+            height: 130px;
+            right: -40px;
+            top: -50px;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 999px;
             pointer-events: none;
             z-index: -1;
@@ -79,72 +96,76 @@
         .system-header-card::after {
             content: "";
             position: absolute;
-            width: 140px;
-            height: 140px;
-            left: -58px;
-            bottom: -62px;
-            background: rgba(215, 157, 37, 0.24);
+            width: 110px;
+            height: 110px;
+            left: -40px;
+            bottom: -40px;
+            background: rgba(215, 157, 37, 0.2);
             border-radius: 999px;
             pointer-events: none;
             z-index: -1;
         }
         .system-title {
-            font-size: 25px;
-            font-weight: 900;
+            font-size: 20px;
+            font-weight: 800;
             color: #ffffff;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
         }
         .system-subtitle {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.85);
-            font-weight: 700;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
             border-top: 1px solid rgba(255,255,255,0.2);
             display: inline-block;
-            padding-top: 8px;
-            margin-top: 6px;
+            padding-top: 6px;
+            margin-top: 4px;
         }
         .monitor-text {
-            font-size: 11px;
+            font-size: 10px;
             color: #ffd966;
             margin-top: 12px;
-            font-weight: 800;
+            font-weight: 700;
             background: rgba(0,0,0,0.2);
             display: inline-block;
             padding: 5px 12px;
             border-radius: 50px;
+            backdrop-filter: blur(10px);
         }
         .support-link {
-            margin-top: 14px;
+            margin-top: 12px;
             font-size: 11px;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.8);
             background: rgba(0,0,0,0.15);
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: 40px;
             display: inline-block;
+            backdrop-filter: blur(10px);
         }
         .support-link a {
             color: #ffd966;
             text-decoration: none;
-            font-weight: 800;
+            font-weight: 700;
         }
 
+        /* تحسين البطاقات الداخلية لتصبح متناسقة ومتراصة بشكل جذاب */
         .card {
-            background: rgba(255, 255, 255, 0.96);
-            border-radius: 28px;
-            padding: 24px;
-            margin: 0 20px 20px 20px;
-            box-shadow: 0 20px 35px -12px rgba(16, 42, 67, 0.08);
-            border: 1px solid rgba(110, 120, 150, 0.12);
-            border-top: 4px solid #0f766e;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            padding: 20px;
+            margin: 0 14px 14px 14px;
+            box-shadow: 0 8px 24px -6px rgba(16, 42, 67, 0.05);
+            border: 1px solid rgba(110, 120, 150, 0.08);
+            border-top: 5px solid #0f766e;
         }
 
         h1 {
-            font-size: 22px;
-            font-weight: 800;
-            margin-bottom: 18px;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
             text-align: center;
             color: #102a43;
+            letter-spacing: -0.3px;
         }
 
         .input-group {
@@ -155,7 +176,7 @@
             display: block;
             margin-bottom: 6px;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 600;
             color: #4a5b7a;
         }
 
@@ -164,51 +185,70 @@
             margin-right: 4px;
         }
 
+        /* تحسين الحقول بإستايل آبل المتجاوب */
         .voter-input, .voter-select {
             width: 100%;
-            padding: 12px 16px;
+            padding: 12px 14px;
             border: 1px solid #e5edf6;
-            border-radius: 18px;
+            border-radius: 14px;
             font-size: 14px;
             background: #f8fbfd;
-            font-family: 'Cairo', sans-serif;
-            transition: 0.2s;
+            font-family: inherit;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             text-align: right;
-            font-weight: 600;
+            font-weight: 500;
+            color: #122033;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
         }
 
         .voter-select {
             cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5b7a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            background-size: 14px;
         }
 
         .voter-input:focus, .voter-select:focus {
             outline: none;
             border-color: #0f766e;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12), inset 0 1px 2px rgba(0,0,0,0.02);
         }
 
+        /* تحسين الأزرار */
         .btn {
             width: 100%;
             padding: 14px;
             border: none;
-            border-radius: 18px;
+            border-radius: 16px;
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Cairo', sans-serif;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: inherit;
             margin-top: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #0f766e, #102a43);
             color: white;
-            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.26);
+            box-shadow: 0 8px 20px rgba(15, 118, 110, 0.18);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.25);
+            transform: translateY(-1px);
         }
 
         .vote-options {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             margin: 16px 0;
         }
 
@@ -216,30 +256,38 @@
             flex: 1;
             padding: 12px;
             border: 2px solid #eef2f8;
-            border-radius: 18px;
+            border-radius: 16px;
             background: #fff;
             cursor: pointer;
-            font-weight: 800;
-            transition: 0.2s;
+            font-weight: 700;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             font-size: 14px;
-            font-family: 'Cairo', sans-serif;
+            font-family: inherit;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.01);
+        }
+
+        .opt-btn:active {
+            transform: scale(0.96);
         }
 
         .opt-btn.selected-approve {
             background: #dcfce7;
             border-color: #0f766e;
             color: #0f766e;
+            box-shadow: 0 6px 16px rgba(15, 118, 110, 0.12);
         }
 
         .opt-btn.selected-reject {
             background: #ffe4e6;
             border-color: #e11d48;
             color: #be123c;
+            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.12);
         }
 
+        /* تحسين صناديق المعلومات لتصبح متناسقة */
         .info-box {
             background: #f8fbfd;
-            border-radius: 24px;
+            border-radius: 20px;
             padding: 16px;
             margin: 12px 0;
             border: 1px solid #e5edf6;
@@ -247,11 +295,12 @@
 
         .info-item {
             margin-bottom: 10px;
-            padding-bottom: 8px;
+            padding-bottom: 10px;
             border-bottom: 1px dashed #dce3ec;
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .info-item:last-child { 
@@ -261,9 +310,9 @@
         }
 
         .info-label { 
-            font-weight: 800; 
+            font-weight: 600; 
             color: #102a43; 
-            min-width: 110px;
+            min-width: 90px;
             font-size: 13px;
         }
 
@@ -273,16 +322,17 @@
             text-align: left;
             font-size: 13px;
             word-break: break-word;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .status-msg {
-            padding: 14px 18px;
-            border-radius: 20px;
+            padding: 14px 16px;
+            border-radius: 16px;
             text-align: center;
-            margin-top: 12px;
+            margin-top: 14px;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.02);
         }
 
         .status-msg.error { background: #feeceb; color: #b13b2a; border-right: 4px solid #bc3f2e; }
@@ -291,47 +341,63 @@
 
         .footer {
             text-align: center;
-            margin: 20px 20px 20px 20px;
-            padding: 12px;
+            margin: 14px;
+            padding: 14px;
             background: linear-gradient(135deg, #102a43, #0f766e);
-            border-radius: 50px;
+            border-radius: 24px;
             color: white;
             font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 8px 16px rgba(16, 42, 67, 0.08);
         }
 
         .hidden {
             display: none;
         }
 
-        /* Modal styles - تصميم جديد وجذاب */
+        /* تحسين بطاقات الحالات لتلائم الهواتف */
+        .case-card {
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+            border-radius: 20px !important;
+        }
+        .case-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 118, 110, 0.1);
+            border-color: rgba(15, 118, 110, 0.15);
+        }
+
+        /* تحسينات النافذة المنبثقة المتناسقة مع الهاتف */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            font-family: 'Cairo', sans-serif;
+            padding: 12px;
         }
         .modal-container {
-            max-width: 750px;
-            width: 92%;
-            max-height: 92vh;
+            max-width: 480px; /* جعل النافذة متطابقة مع حجم الهواتف الذكية */
+            width: 100%;
+            max-height: 85vh;
             overflow-y: auto;
-            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-            border-radius: 48px;
-            box-shadow: 0 40px 70px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.6);
-            animation: fadeSlideUp 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255,255,255,0.5) inset;
+            animation: fadeSlideUp 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         @keyframes fadeSlideUp {
             from {
                 opacity: 0;
-                transform: translateY(50px) scale(0.96);
+                transform: translateY(30px) scale(0.98);
             }
             to {
                 opacity: 1;
@@ -340,179 +406,180 @@
         }
         .modal-header {
             background: linear-gradient(135deg, #0f766e, #0b5e58);
-            padding: 28px 24px;
+            padding: 24px 20px;
             text-align: center;
             position: sticky;
             top: 0;
             z-index: 10;
-            border-radius: 48px 48px 0 0;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
         .modal-header h3 {
             color: white;
-            font-size: 28px;
-            font-weight: 900;
+            font-size: 22px;
+            font-weight: 800;
             margin: 0;
-            letter-spacing: -0.5px;
         }
         .modal-header p {
-            color: rgba(255,255,255,0.85);
-            font-size: 14px;
-            margin-top: 8px;
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
         }
         .modal-body {
-            padding: 30px 28px;
+            padding: 20px;
             background: transparent;
         }
         
-        /* بطاقات العناوين المميزة */
+        /* بطاقات الأقسام داخل الاتفاقية */
         .section-card {
             background: white;
-            border-radius: 28px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-            border-right: 6px solid #0f766e;
-            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+            border-right: 5px solid #0f766e;
+            transition: all 0.25s ease;
         }
         .section-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 16px 32px rgba(15, 118, 110, 0.12);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(15, 118, 110, 0.05);
         }
         .section-title {
-            font-size: 20px;
-            font-weight: 900;
+            font-size: 16px;
+            font-weight: 700;
             color: #0f766e;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 12px;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
         }
         .section-title i {
-            font-size: 24px;
+            font-size: 18px;
             color: #d4a017;
         }
         .section-content {
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.7;
-            color: #2d3748;
+            color: #334155;
             font-weight: 500;
         }
         .section-content p {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .section-content strong {
             color: #0f766e;
+            font-weight: 700;
         }
         .bullets-list {
             list-style: none;
-            padding-right: 8px;
+            padding-right: 4px;
         }
         .bullets-list li {
-            margin-bottom: 10px;
-            padding-right: 24px;
+            margin-bottom: 8px;
+            padding-right: 18px;
             position: relative;
         }
         .bullets-list li:before {
             content: "•";
             color: #0f766e;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             position: absolute;
             right: 0;
             top: -2px;
         }
         .warning-badge {
             background: #fff3e0;
-            border-radius: 20px;
-            padding: 12px 16px;
-            margin: 16px 0;
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin: 14px 0 0 0;
             border-right: 4px solid #e2a14f;
-            font-size: 13px;
+            font-size: 12px;
+            font-weight: 600;
         }
         .modal-buttons {
             display: flex;
-            gap: 20px;
-            margin-top: 30px;
+            gap: 14px;
+            margin-top: 24px;
             flex-wrap: wrap;
         }
         .modal-btn {
             flex: 1;
-            padding: 16px 20px;
-            border-radius: 60px;
-            font-weight: 800;
-            font-size: 18px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
             border: none;
             cursor: pointer;
-            transition: all 0.25s;
-            font-family: 'Cairo', sans-serif;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: inherit;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
+        }
+        .modal-btn:active {
+            transform: scale(0.96);
         }
         .modal-btn-accept {
             background: linear-gradient(135deg, #0f766e, #0b5e58);
             color: white;
-            box-shadow: 0 10px 24px rgba(15,118,110,0.4);
+            box-shadow: 0 8px 20px rgba(15,118,110,0.22);
         }
         .modal-btn-reject {
-            background: #f1f3f7;
+            background: #f8fafc;
             color: #4a5b7a;
-            border: 1px solid #dce3ec;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.02);
         }
         .modal-btn-accept:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 28px rgba(15,118,110,0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(15,118,110,0.3);
         }
         .modal-btn-reject:hover {
-            background: #feeceb;
+            background: #fff1f2;
             color: #be123c;
-            border-color: #f0c4c4;
-            transform: translateY(-2px);
+            border-color: #fecdd3;
+            transform: translateY(-1px);
         }
         .reject-message {
             background: linear-gradient(135deg, #fff0f0, #ffe0e0);
             color: #b91c1c;
             border-right: 5px solid #e11d48;
-            padding: 18px;
-            border-radius: 28px;
-            margin-top: 24px;
-            font-weight: 800;
+            padding: 16px;
+            border-radius: 18px;
+            margin-top: 18px;
+            font-weight: 600;
             text-align: center;
-            font-size: 15px;
+            font-size: 14px;
+            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.08);
         }
         
-        /* تخصيص شريط التمرير */
+        /* شريط التمرير */
         .modal-container::-webkit-scrollbar {
             width: 6px;
         }
         .modal-container::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 10px;
+            background: transparent;
         }
         .modal-container::-webkit-scrollbar-thumb {
-            background: #0f766e;
+            background: rgba(15, 118, 110, 0.25);
             border-radius: 10px;
-        }
-        
-        @media (max-width: 550px) {
-            .modal-container { width: 95%; }
-            .section-title { font-size: 18px; }
-            .modal-body { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-<!-- نافذة الاتفاقية - تصميم جديد ببطاقات مميزة وأزرار موافق/غير موافق فقط -->
+<!-- نافذة الاتفاقية -->
 <div id="agreementModal" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-header">
-            <h3><i class="fas fa-handshake" style="margin-left: 10px;"></i> اتفاقية الاستخدام</h3>
+            <h3><i class="fas fa-handshake" style="margin-left: 8px;"></i> اتفاقية الاستخدام</h3>
             <p>صندوق دعم الحالات الطارئة – قرية محبران</p>
         </div>
         <div class="modal-body">
@@ -578,7 +645,7 @@
                 <div class="section-content">
                     <p>بالضغط على زر <strong>"موافق"</strong> أو بالاستمرار في استخدام نظام التصويت، فإنك تقر بأنك قرأت هذه الاتفاقية كاملة، وفهمت جميع بنودها، وتوافق على الالتزام بها دون أي تحفظ.</p>
                     <div class="warning-badge">
-                        <i class="fas fa-exclamation-triangle" style="margin-left: 8px;"></i>
+                        <i class="fas fa-exclamation-triangle" style="margin-left: 6px;"></i>
                         آخر تحديث: يونيو 2026 · جميع الحقوق محفوظة لإدارة الصندوق
                     </div>
                 </div>
@@ -595,7 +662,7 @@
 </div>
 
 <div class="app-card" id="mainAppContent" style="display: none;">
-    <div class="alert-strip" style="background: linear-gradient(90deg, #be123c, #e11d48, #f97316); color: white; text-align: center; font-size: 11px; font-weight: 800; padding: 10px 14px; box-shadow: 0 10px 24px rgba(225, 29, 72, 0.2);">
+    <div class="alert-strip" style="background: linear-gradient(90deg, #be123c, #e11d48, #f97316); color: white; text-align: center; font-size: 11px; font-weight: 700; padding: 10px 14px; box-shadow: 0 10px 24px rgba(225, 29, 72, 0.2);">
         ⚠️ نظام التصويت الإلكتروني - تأكد من أمانة قرارك
     </div>
     
@@ -639,12 +706,12 @@
         <div class="input-group">
             <label class="input-label">كلمة المرور (الرقم السري) <span class="required-star">*</span></label>
             <input type="password" id="voterPassword" class="voter-input" placeholder="أدخل الرقم السري الخاص بك">
-            <div class="password-hint" style="font-size:11px; color:#8e8e93; margin-top:6px; text-align:center;">كلمة المرور هي التي تم ارسالها لك من قبل المشرف</div>
+            <div class="password-hint" style="font-size:11px; color:#8e8e93; margin-top:8px; text-align:center; font-weight:500;">كلمة المرور هي التي تم ارسالها لك من قبل المشرف</div>
         </div>
         
-        <div class="integrity-message-card" style="background: linear-gradient(135deg, #fff8e7, #fff3df); border-radius: 24px; padding: 18px 20px; margin-bottom: 18px; border-right: 5px solid #d4a017;">
-            <div class="integrity-title" style="font-size: 16px; font-weight: 900; color: #8b6914;">أمانة القرار وعدالة التصويت</div>
-            <div class="integrity-text" style="font-size: 13px; line-height: 1.65; color: #4a3b1a;">"إن الله يأمركم أن تؤدوا الأمانات إلى أهلها"<br><br>عند الإدلاء بصوتك، تذكر أن قرارك يجب أن يكون خالياً من أي انحياز. صوتك أمانة.<div class="integrity-badge" style="background:#e8dbbd; border-radius:30px; padding:3px 12px; margin-top:10px;">صوتك = أمانة · التصويت مرة واحدة فقط</div></div>
+        <div class="integrity-message-card" style="background: linear-gradient(135deg, #fff8e7, #fff3df); border-radius: 20px; padding: 18px; margin-bottom: 18px; border-right: 5px solid #d4a017; box-shadow: 0 6px 20px rgba(212, 160, 23, 0.05);">
+            <div class="integrity-title" style="font-size: 15px; font-weight: 700; color: #8b6914; margin-bottom: 6px;">أمانة القرار وعدالة التصويت</div>
+            <div class="integrity-text" style="font-size: 13px; line-height: 1.65; color: #4a3b1a; font-weight: 500;">"إن الله يأمركم أن تؤدوا الأمانات إلى أهلها"<br><br>عند الإدلاء بصوتك، تذكر أن قرارك يجب أن يكون خالياً من أي انحياز. صوتك أمانة.<div class="integrity-badge" style="background:#e8dbbd; border-radius:30px; padding:5px 12px; margin-top:10px; font-weight: 600; display: inline-block;">صوتك = أمانة · التصويت مرة واحدة فقط</div></div>
         </div>
         
         <button class="btn btn-primary" onclick="verifyAndLogin()">دخول</button>
@@ -653,8 +720,8 @@
 
     <div id="selectCaseSection" class="card hidden">
         <h1>الحالات المحولة للتصويت</h1>
-        <div id="casesList" class="info-box"></div>
-        <button class="btn" style="background: #f0f0f0; color: #666; font-weight:700;" onclick="goBackToLogin()">تسجيل خروج</button>
+        <div id="casesList" class="info-box" style="background: transparent; border: none; padding: 0; box-shadow: none;"></div>
+        <button class="btn" style="background: #f1f5f9; color: #475569; font-weight:700;" onclick="goBackToLogin()">تسجيل خروج</button>
         <div id="selectCaseMsg"></div>
     </div>
 
@@ -663,21 +730,21 @@
         <div id="caseDetails" class="info-box"></div>
         <div id="votersTableSection"></div>
         <div>
-            <div class="section-title-voters" style="font-weight:800;">تصويت اللجنة</div>
-            <h3 style="font-size: 15px; color: #4a5b7a; margin: 12px 0 8px 0; font-weight:800;">رأيك في الحالة:</h3>
+            <div class="section-title-voters" style="font-weight:700; font-size: 16px; color: #102a43; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-top: 18px;">تصويت اللجنة</div>
+            <h3 style="font-size: 14px; color: #4a5b7a; margin: 12px 0 8px 0; font-weight:600;">رأيك في الحالة:</h3>
             <div class="vote-options">
                 <button id="btnApprove" class="opt-btn" onclick="selectOption('موافق')">موافق</button>
                 <button id="btnReject" class="opt-btn" onclick="selectOption('غير موافق')">غير موافق</button>
             </div>
             <button class="btn btn-primary" id="btnSubmitVote" onclick="submitFinalVote()">إرسال التصويت</button>
-            <button class="btn" style="background: #f0f0f0; color: #666; font-weight:700;" onclick="goBackToSelect()">العودة للقائمة</button>
+            <button class="btn" style="background: #f1f5f9; color: #475569; font-weight:700;" onclick="goBackToSelect()">العودة للقائمة</button>
             <div id="voteMsg"></div>
         </div>
     </div>
 
     <div class="footer">
         <div class="footer-line">المشرف العام : مصطفى الشجاع</div>
-        <div class="footer-line">تطوير النظام : عمرو مسعد الشجاع</div>
+        <div class="footer-line" style="margin-top: 4px; opacity: 0.9;">تطوير النظام : عمرو مسعد الشجاع</div>
     </div>
 </div>
 
@@ -816,15 +883,15 @@
         if (votingCasesList.length === 0) { casesDiv.innerHTML = '<div class="status-msg warning">لا توجد حالات محولة للتصويت</div>'; return; }
         let casesHtml = '';
         votingCasesList.forEach((caseData, index) => {
-            casesHtml += `<div class="case-card" onclick="selectCase('${caseData.id}')" style="background:#ffffff; border-radius:24px; padding:15px; margin-bottom:12px; border-right:4px solid #0f766e; cursor:pointer;">
+            casesHtml += `<div class="case-card" onclick="selectCase('${caseData.id}')" style="background:#ffffff; padding:16px; margin-bottom:12px; border-right:4px solid #0f766e; cursor:pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <div><div style="font-weight: 800; color: #102a43; margin-bottom: 6px;">${escapeHtml(caseData.caseName) || 'بدون اسم'}</div>
-                    <div style="font-size: 12px; color: #6c6c70;">مقدم الطلب: ${escapeHtml(caseData.requesterName) || 'غير محدد'}</div>
-                    <div style="font-size: 12px; color: #6c6c70;">نوع الحالة: ${caseTypeLabels[caseData.caseType] || caseData.caseType || 'غير محدد'}</div></div>
-                    <div style="text-align: left;"><div style="font-weight: 800; color: #0f766e;">${(caseData.requestAmount || 0).toLocaleString()} ${caseData.preferredCurrency === 'sar' ? 'ر.س' : caseData.preferredCurrency === 'usd' ? '$' : 'ر.ي'}</div>
-                    <div style="font-size: 11px; color: #8e8e93;">${caseData.requestDate || 'تاريخ غير محدد'}</div></div>
+                    <div><div style="font-weight: 700; color: #102a43; margin-bottom: 4px; font-size: 15px;">${escapeHtml(caseData.caseName) || 'بدون اسم'}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">مقدم الطلب: ${escapeHtml(caseData.requesterName) || 'غير محدد'}</div>
+                    <div style="font-size: 12px; color: #64748b;">نوع الحالة: ${caseTypeLabels[caseData.caseType] || caseData.caseType || 'غير محدد'}</div></div>
+                    <div style="text-align: left;"><div style="font-weight: 700; color: #0f766e; font-size: 15px; margin-bottom: 2px;">${(caseData.requestAmount || 0).toLocaleString()} ${caseData.preferredCurrency === 'sar' ? 'ر.س' : caseData.preferredCurrency === 'usd' ? '$' : 'ر.ي'}</div>
+                    <div style="font-size: 11px; color: #94a3b8;">${caseData.requestDate || 'تاريخ غير محدد'}</div></div>
                 </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #0f766e;">اضغط لاختيار هذه الحالة</div>
+                <div style="margin-top: 10px; font-size: 12px; color: #0f766e; font-weight: 600;">اضغط لاختيار هذه الحالة &larr;</div>
             </div>`;
         });
         casesDiv.innerHTML = casesHtml;
@@ -893,7 +960,7 @@
         } catch (error) { console.error(error); msg.innerHTML = '<div class="status-msg error">حدث خطأ أثناء إرسال التصويت</div>'; }
     }
 
-    // ------ منطق النافذة المنبثقة (الأزرار موافق / غير موافق فقط) ------
+    // ------ منطق النافذة المنبثقة ------
     document.getElementById('agreeBtn').addEventListener('click', function() {
         document.getElementById('agreementModal').style.display = 'none';
         document.getElementById('mainAppContent').style.display = 'block';
@@ -905,3 +972,5 @@
 </script>
 </body>
 </html>
+
+```
