@@ -772,6 +772,16 @@
         appId: "1:329518389376:web:f2f73f4a257dcb84efee65"
     };
 
+    const controlPanelConfig = {
+        apiKey: "AIzaSyDQD8Ewq8klOqZpV-RU8uHslUuH5h0T8_8",
+        authDomain: "amr4admin.firebaseapp.com",
+        databaseURL: "https://amr4admin-default-rtdb.firebaseio.com",
+        projectId: "amr4admin",
+        storageBucket: "amr4admin.firebasestorage.app",
+        messagingSenderId: "177280788092",
+        appId: "1:177280788092:web:44f16c8f585a5b3e484bf9"
+    };
+
     let app;
     try {
         if (!firebase.apps.length) app = firebase.initializeApp(firebaseConfig);
@@ -780,6 +790,10 @@
     
     const rtDb = firebase.database();
     const auth = firebase.auth();
+    let controlPanelApp;
+    try { controlPanelApp = firebase.app('controlPanelApp'); } catch(e) { controlPanelApp = firebase.initializeApp(controlPanelConfig, 'controlPanelApp'); }
+    const controlRtDb = firebase.database(controlPanelApp);
+    const controlAuth = firebase.auth(controlPanelApp);
     const APP_PATH = "amr4admin";
 
     let currentCaseData = null;
@@ -790,6 +804,15 @@
     async function ensureFirebaseAuth() {
         if (!auth.currentUser) await auth.signInAnonymously();
         return auth.currentUser;
+    }
+
+    async function ensureControlPanelAuth() {
+        if (!controlAuth.currentUser) await controlAuth.signInAnonymously();
+        return controlAuth.currentUser;
+    }
+
+    function isHiddenCase(caseData) {
+        return !!(caseData && (caseData.deleted === true || caseData.hiddenFromVoting === true || caseData.status === 'deleted'));
     }
 
     async function getUserIP() {
@@ -852,18 +875,31 @@
             const userIP = await getUserIP();
             voterInfo = { name, caseId: '', ip: userIP };
             await ensureFirebaseAuth();
+            try { await ensureControlPanelAuth(); } catch(e) { console.warn('تعذر التحقق من قاعدة لوحة التحكم:', e); }
             const votingRef = rtDb.ref(`${APP_PATH}/voting_submissions`);
             const votingSnapshot = await votingRef.once('value');
             const votingData = votingSnapshot.val() || {};
             const votingCaseIds = [];
-            for (const [key, votingItem] of Object.entries(votingData)) if (votingItem && votingItem.originalId) votingCaseIds.push(votingItem.originalId);
+            for (const [key, votingItem] of Object.entries(votingData)) {
+                if (votingItem && votingItem.originalId && !isHiddenCase(votingItem)) {
+                    votingCaseIds.push(votingItem.originalId);
+                }
+            }
             if (votingCaseIds.length === 0) { msgElement.innerHTML = '<div class="status-msg warning">لا توجد حالات تم تحويلها للتصويت حالياً</div>'; return; }
             const requestsRef = rtDb.ref(`assistanceRequests`);
             const requestsSnapshot = await requestsRef.once('value');
             const allCases = requestsSnapshot.val() || {};
+            let controlCases = {};
+            try {
+                const controlSnapshot = await controlRtDb.ref('assistanceRequests').once('value');
+                controlCases = controlSnapshot.val() || {};
+            } catch(e) {
+                console.warn('تعذر قراءة حالات لوحة التحكم:', e);
+            }
             const validVotingCases = [];
             for (const [id, caseData] of Object.entries(allCases)) {
-                if (votingCaseIds.includes(id) && caseData.status === 'pending') {
+                const controlCase = controlCases[id] || {};
+                if (votingCaseIds.includes(id) && caseData.status === 'pending' && !isHiddenCase(caseData) && !isHiddenCase(controlCase)) {
                     let alreadyVoted = false;
                     if (caseData.votes && caseData.votes[name]) alreadyVoted = true;
                     if (!alreadyVoted) validVotingCases.push({ id, ...caseData });
@@ -906,7 +942,20 @@
             await ensureFirebaseAuth();
             const snapshot = await rtDb.ref(`assistanceRequests/${caseId}`).once('value');
             if (snapshot.exists()) {
-                currentCaseData = snapshot.val(); currentCaseData.id = caseId; voterInfo.caseId = caseId;
+                const loadedCase = snapshot.val();
+                let controlCase = {};
+                try {
+                    await ensureControlPanelAuth();
+                    const controlSnapshot = await controlRtDb.ref(`assistanceRequests/${caseId}`).once('value');
+                    controlCase = controlSnapshot.val() || {};
+                } catch(e) {
+                    console.warn('تعذر التحقق من حالة لوحة التحكم:', e);
+                }
+                if (!loadedCase || isHiddenCase(loadedCase) || isHiddenCase(controlCase) || loadedCase.status !== 'pending') {
+                    msg.innerHTML = '<div class="status-msg warning">هذه الحالة لم تعد متاحة للتصويت</div>';
+                    return;
+                }
+                currentCaseData = loadedCase; currentCaseData.id = caseId; voterInfo.caseId = caseId;
                 displayCase(); displayVotersList();
                 msg.innerHTML = '';
                 document.getElementById('selectCaseSection').classList.add('hidden');
@@ -942,8 +991,22 @@
     async function submitFinalVote() {
         const msg = document.getElementById('voteMsg');
         if (!selectedVote) { msg.innerHTML = '<div class="status-msg error">يرجى اختيار موافق أو غير موافق أولاً</div>'; return; }
-        if (currentCaseData.status !== 'pending') { msg.innerHTML = '<div class="status-msg error">لا يمكن التصويت على هذه الحالة لأنها تمت مراجعتها مسبقاً</div>'; return; }
+        if (currentCaseData.status !== 'pending' || isHiddenCase(currentCaseData)) { msg.innerHTML = '<div class="status-msg error">لا يمكن التصويت على هذه الحالة لأنها لم تعد متاحة</div>'; return; }
         await ensureFirebaseAuth();
+        const latestCaseSnapshot = await rtDb.ref(`assistanceRequests/${voterInfo.caseId}`).once('value');
+        const latestCaseData = latestCaseSnapshot.val();
+        let latestControlCase = {};
+        try {
+            await ensureControlPanelAuth();
+            const latestControlSnapshot = await controlRtDb.ref(`assistanceRequests/${voterInfo.caseId}`).once('value');
+            latestControlCase = latestControlSnapshot.val() || {};
+        } catch(e) {
+            console.warn('تعذر التحقق من حذف الحالة في لوحة التحكم:', e);
+        }
+        if (!latestCaseData || isHiddenCase(latestCaseData) || isHiddenCase(latestControlCase) || latestCaseData.status !== 'pending') {
+            msg.innerHTML = '<div class="status-msg error">لا يمكن التصويت على هذه الحالة لأنها لم تعد متاحة</div>';
+            return;
+        }
         const votesRef = rtDb.ref(`assistanceRequests/${voterInfo.caseId}/votes`);
         const snapshot = await votesRef.once('value');
         const votes = snapshot.val() || {};
@@ -972,5 +1035,3 @@
 </script>
 </body>
 </html>
-
-
